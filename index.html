@@ -227,11 +227,15 @@
   </div>
 
   <script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()">
+);
+
+
 const modalDetails = document.getElementById("modalDetails");
 const detailsContent = document.getElementById("detailsContent");
 
 function openDetails(p){
   detailsContent.innerHTML = `
+    ${p.image ? `<img src="${p.image}" alt="Product" style="max-width:100%; border-radius:8px; margin-bottom:.5rem;">` : ""}
     <p><b>Name:</b> ${p.name}</p>
     <p><b>Buy Price:</b> ${p.buyPrice}</p>
     <p><b>Sell Price:</b> ${p.sellPrice}</p>
@@ -398,11 +402,15 @@ modalDetails.addEventListener('click', function(e) {
     }
   </script>
 
+  
+  </div>
+
+
   <div id="modalDetails" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;
        background:rgba(0,0,0,0.6); z-index:1200; align-items:center; justify-content:center;">
     <div class="content" style="background:linear-gradient(145deg,#111,#1a1a1a);
          border:2px solid rgba(255,204,0,0.3); padding:.8rem; border-radius:14px;
-         width:100%; max-width:280px; text-align:center; max-height:70vh; overflow-y:auto;
+         width:100%; max-width:280px; text-align:center; max-height:80vh; overflow-y:auto;
          box-shadow:0 6px 14px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.05);">
       <h3>Product Details</h3>
       <div id="detailsContent"></div>
