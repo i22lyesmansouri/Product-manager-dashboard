@@ -111,6 +111,18 @@
       color: #fff;
     }
     video { width: 100%; max-height: 300px; border: 2px solid var(--accent); border-radius: 6px; }
+  
+    .barcode-field { position: relative; display:flex; align-items:center; }
+    .barcode-field input { flex:1; padding-right:2rem; }
+    .barcode-field .scan-icon {
+      position: absolute;
+      right: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--accent);
+    }
+    .barcode-field .scan-icon:hover { color: #e6b800; }
+
   </style>
 </head>
 <body>
@@ -155,7 +167,12 @@
         <input type="number" id="buyPrice" placeholder="Buy Price" required>
         <input type="number" id="sellPrice" placeholder="Sell Price" required>
         <input type="number" id="stock" placeholder="Stock Quantity" required>
-        <input type="text" id="barcode" placeholder="Barcode (optional)">
+        
+<div class="barcode-field">
+  <input type="text" id="barcode" placeholder="Barcode (optional)">
+  <span class="scan-icon" onclick="startScannerForField()">📷</span>
+</div>
+
 
         <input type="file" id="image" accept="image/*" required style="display:none">
         <label for="image" id="photoLabel">📷 Add Photo</label>
@@ -275,6 +292,13 @@
     }
 
     
+    
+    let scannerTargetField = null;
+    function startScannerForField(){
+      scannerTargetField = document.getElementById("barcode");
+      startScanner(true);
+    }
+
     function startScanner(){
       const scannerEl = document.getElementById("scanner");
       scannerEl.style.display="block";
