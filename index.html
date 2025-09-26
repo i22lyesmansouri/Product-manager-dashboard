@@ -32,17 +32,7 @@
     #searchBar { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; }
     #search { padding: .3rem; flex: 1; border-radius: 4px; border: none; font-size: 13px; }
     #productList { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; margin-top: .5rem; }
-    .product {
-  background: linear-gradient(145deg, #111, #1a1a1a);
-  border: 1px solid rgba(255, 204, 0, 0.2);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5),
-              inset 0 2px 6px rgba(255,255,255,0.05);
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-}
+    .product { background: var(--card); padding: .4rem; border-radius: 6px; text-align: center; font-size: 13px; }
     .product img { max-width: 100%; border-radius: 4px; }
     .product button { margin-top: .3rem; background: red; color: #fff; border: none; padding: .2rem .4rem; border-radius: 4px; cursor: pointer; font-size: 12px; }
     #addBtn { position: fixed; bottom: 20px; right: 20px; background: var(--accent); color: #111; font-size: 1.6rem; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 1002; }
@@ -134,33 +124,23 @@
     .barcode-field .scan-icon:hover { color: #e6b800; }
 
   
+.product {
+  background: linear-gradient(145deg, #1a1a1a, #000);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.8);
+}
 .product img {
   width: 100%;
-  height: 130px;
+  height: 160px;
   object-fit: cover;
-}
-.product .details {
-  padding: .5rem;
-}
-.product .details h3 {
-  margin: .2rem 0;
-  font-size: 14px;
-  color: var(--accent);
-}
-.product .details p {
-  margin: .1rem 0;
-  font-size: 12px;
-}
-.product button {
-  margin-top: .3rem;
-  background: var(--danger);
-  color: #fff;
-  border: none;
-  padding: .25rem .5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  width: 100%;
+  display: block;
+  border-radius: 12px;
 }
 
 </style>
@@ -227,9 +207,6 @@
   </div>
 
   <script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()">
-);
-
-
 const modalDetails = document.getElementById("modalDetails");
 const detailsContent = document.getElementById("detailsContent");
 
@@ -401,24 +378,5 @@ modalDetails.addEventListener('click', function(e) {
       document.getElementById("scanner").style.display="none";
     }
   </script>
-
-  
-  </div>
-
-
-  <div id="modalDetails" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;
-       background:rgba(0,0,0,0.6); z-index:1200; align-items:center; justify-content:center;">
-    <div class="content" style="background:linear-gradient(145deg,#111,#1a1a1a);
-         border:2px solid rgba(255,204,0,0.3); padding:.8rem; border-radius:14px;
-         width:100%; max-width:280px; text-align:center; max-height:80vh; overflow-y:auto;
-         box-shadow:0 6px 14px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.05);">
-      <h3>Product Details</h3>
-      <div id="detailsContent"></div>
-      <div class="actions" style="margin-top:.5rem;">
-        <button type="button" onclick="closeDetails()" class="action-btn cancel">Close</button>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>
