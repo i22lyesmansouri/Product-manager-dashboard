@@ -123,21 +123,6 @@
     }
     .barcode-field .scan-icon:hover { color: #e6b800; }
 
-  
-    /* Product grid clean design */
-    .product { position: relative; background: var(--card); border-radius: 10px; overflow: hidden; cursor: pointer; }
-    #productList { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .8rem; margin-top: .5rem; }
-    .img-wrapper { position: relative; width: 100%; padding-top: 100%; overflow: hidden; }
-    .img-wrapper img { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; }
-    .price-tag { position: absolute; top: 8px; left: 8px; background: var(--accent); color: #111; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 700; }
-    .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color: #999; background: #111; }
-    /* Details modal */
-    #detailsModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1600; align-items:center; justify-content:center; }
-    #detailsModal .content { background: var(--card); padding:1rem; border-radius:16px; max-width:420px; width:92%; color:var(--fg); text-align:left; box-shadow:0 8px 20px rgba(0,0,0,.5); }
-    #detailsModal .content img { width:100%; height:auto; border-radius:10px; margin-bottom:10px; }
-    #detailsModal h3 { margin:0 0 8px; color:var(--accent); }
-    #detailsModal .row { display:flex; justify-content:space-between; padding:4px 0; font-size:14px; }
-
   </style>
 </head>
 <body>
@@ -201,46 +186,14 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()">
-    function showDetails(id){
-      const tx = db.transaction("products", "readonly");
-      tx.objectStore("products").get(id).onsuccess = function(e){
-        const p = e.target.result;
-        document.getElementById("detailsImage").src = p.image || '';
-        document.getElementById("detailsName").innerText = p.name || '';
-        document.getElementById("detailsBuy").innerText = p.buyPrice || '';
-        document.getElementById("detailsSell").innerText = p.sellPrice || '';
-        document.getElementById("detailsStock").innerText = p.stock || '';
-        document.getElementById("detailsModal").style.display = 'flex';
-      };
-    }
-    function closeDetails(){ document.getElementById("detailsModal").style.display = 'none'; }
-    document.getElementById('detailsModal').addEventListener('click', function(e){ if(e.target===this) closeDetails(); });
-
-</script>
+  <script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()"></script>
   <script>
     function loadLocalQuagga(){
       var s=document.createElement('script');
       s.src='quagga.min.js';
       document.body.appendChild(s);
     }
-  
-    function showDetails(id){
-      const tx = db.transaction("products", "readonly");
-      tx.objectStore("products").get(id).onsuccess = function(e){
-        const p = e.target.result;
-        document.getElementById("detailsImage").src = p.image || '';
-        document.getElementById("detailsName").innerText = p.name || '';
-        document.getElementById("detailsBuy").innerText = p.buyPrice || '';
-        document.getElementById("detailsSell").innerText = p.sellPrice || '';
-        document.getElementById("detailsStock").innerText = p.stock || '';
-        document.getElementById("detailsModal").style.display = 'flex';
-      };
-    }
-    function closeDetails(){ document.getElementById("detailsModal").style.display = 'none'; }
-    document.getElementById('detailsModal').addEventListener('click', function(e){ if(e.target===this) closeDetails(); });
-
-</script>
+  </script>
 
   <script>
     let db;
@@ -263,33 +216,50 @@
       tx.objectStore("products").delete(id);
       tx.oncomplete = () => renderProducts(document.getElementById("search").value);
     }
-    
     function renderProducts(filter = "") {
       const tx = db.transaction("products", "readonly");
       const store = tx.objectStore("products");
       const req = store.getAll();
       req.onsuccess = function() {
-        const products = req.result || [];
+        const products = req.result;
         const productList = document.getElementById("productList");
         productList.innerHTML = "";
-        const q = (filter || "").toString().toLowerCase();
         products.filter(p =>
-          (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.barcode && p.barcode.includes(q))
+          p.name.toLowerCase().includes(filter.toLowerCase()) ||
+          (p.barcode && p.barcode.includes(filter))
         ).forEach(p => {
           const div = document.createElement("div");
           div.className = "product";
           div.innerHTML = `
-            <div class="img-wrapper" onclick="showDetails(${p.id})">
-              ${p.image ? `<img src="${p.image}" alt="Product">` : `<div class="placeholder">No image</div>`}
-              <div class="price-tag">د ${p.sellPrice || ''}</div>
-            </div>
+            ${p.image ? `<img src="${p.image}" alt="Product">` : ""}
+            <h3>${p.name}</h3>
+            <p>Buy: <b>${p.buyPrice}</b></p>
+            <p>Sell: <b>${p.sellPrice}</b></p>
+            <p>Stock: <b>${p.stock}</b></p>
+            ${p.barcode ? `<p>Barcode: <b>${p.barcode}</b></p>` : ""}
+            <button onclick="deleteProduct(${p.id})">🗑 Delete</button>
           `;
           productList.appendChild(div);
         });
       };
     }
-);
+
+    document.getElementById("search").addEventListener("input", e => renderProducts(e.target.value));
+
+    function toggleSidebar(){ document.getElementById("sidebar").classList.toggle("open"); document.getElementById("overlay").style.display="block"; }
+    function closeSidebar(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").style.display="none"; }
+    function toggleTheme(){ document.body.classList.toggle("light"); }
+    const modal=document.getElementById("modal");
+    function openModal(){ modal.style.display="flex"; }
+    function closeModal(){ modal.style.display="none"; }
+
+    
+    // Close modal when clicking outside content
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
     
     const form=document.getElementById("productForm");
     form.addEventListener("submit", e=>{
@@ -364,33 +334,6 @@
       if(typeof Quagga!=="undefined"){ Quagga.stop(); }
       document.getElementById("scanner").style.display="none";
     }
-  
-    function showDetails(id){
-      const tx = db.transaction("products", "readonly");
-      tx.objectStore("products").get(id).onsuccess = function(e){
-        const p = e.target.result;
-        document.getElementById("detailsImage").src = p.image || '';
-        document.getElementById("detailsName").innerText = p.name || '';
-        document.getElementById("detailsBuy").innerText = p.buyPrice || '';
-        document.getElementById("detailsSell").innerText = p.sellPrice || '';
-        document.getElementById("detailsStock").innerText = p.stock || '';
-        document.getElementById("detailsModal").style.display = 'flex';
-      };
-    }
-    function closeDetails(){ document.getElementById("detailsModal").style.display = 'none'; }
-    document.getElementById('detailsModal').addEventListener('click', function(e){ if(e.target===this) closeDetails(); });
-
-</script>
-
-  <!-- Product Details Modal -->
-  <div id="detailsModal">
-    <div class="content">
-      <img id="detailsImage" src="" alt="Product image">
-      <h3 id="detailsName"></h3>
-      <div class="row"><div>Buy:</div><div id="detailsBuy"></div></div>
-      <div class="row"><div>Sell:</div><div id="detailsSell"></div></div>
-      <div class="row"><div>Stock:</div><div id="detailsStock"></div></div>
-    </div>
-  </div>
+  </script>
 </body>
 </html>
