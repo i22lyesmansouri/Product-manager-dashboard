@@ -1,14 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Product Manager — Upgraded</title>
-<style>
-/* ... (CSS content truncated for brevity in this Python cell) ... */
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Manager Dashboard</title>
+  <style>
+    :root {
+      --bg: #111;
+      --fg: #eee;
+      --accent: #ffcc00;
+      --card: #222;
+      --danger: #dc3545;
+    }
+    body.light {
+      --bg: #f4f4f4;
+      --fg: #111;
+      --accent: #ffcc00;
+      --card: #fff;
+    }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--fg); font-size: 14px; }
+    header { background: var(--bg); padding: .4rem .8rem; color: var(--fg); font-size: 1rem; font-weight: bold; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1001; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+    header .left { display: flex; align-items: center; gap: 1rem; }
+    header .right { display: flex; align-items: center; gap: .8rem; }
+    header .icon-btn { background: none; border: none; font-size: 1.4rem; color: var(--accent); cursor: pointer; }
+    #container { display: flex; min-height: 100vh; }
+    #sidebar { width: 200px; background: var(--card); padding: .5rem; transition: transform 0.3s ease; transform: translateX(-100%); position: fixed; top: 0; left: 0; height: 100%; z-index: 1000; }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar button { display: flex; align-items: center; gap: .5rem; width: 100%; margin: .3rem 0; padding: .4rem; background: none; color: var(--fg); border: none; border-radius: 4px; cursor: pointer; font-size: 13px; text-align: left; }
+    #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); display: none; z-index: 900; }
+    main { flex: 1; padding: .5rem 1rem; margin-left: 0; transition: margin-left 0.3s ease; }
+    #searchBar { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; }
+    #search { padding: .3rem; flex: 1; border-radius: 4px; border: none; font-size: 13px; }
+    #productList { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; margin-top: .5rem; }
+    .product { background: var(--card); padding: .4rem; border-radius: 6px; text-align: center; font-size: 13px; }
+    .product img { max-width: 100%; border-radius: 4px; }
+    .product button { margin-top: .3rem; background: red; color: #fff; border: none; padding: .2rem .4rem; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    #addBtn { position: fixed; bottom: 20px; right: 20px; background: var(--accent); color: #111; font-size: 1.6rem; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 1002; }
+    #modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1100; align-items: center; justify-content: center; }
+    #modal .content {
+      background: linear-gradient(145deg, #111, #1a1a1a);
+      border: 2px solid rgba(255, 204, 0, 0.3);
+      padding: .8rem;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 280px; /* reduced width ~2/3 */
+      text-align: center;
+      max-height: 70vh; /* reduced height */
+      overflow-y: auto;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.6),
+                  inset 0 2px 6px rgba(255,255,255,0.05);
+    }
+    #modal .content input {
+      background: #000;
+      color: var(--fg);
+      border: 1px solid rgba(255, 204, 0, 0.4);
+      border-radius: 8px;
+      padding: .4rem;
+      margin: .25rem 0;
+      font-size: 14px;
+      transition: border 0.3s, box-shadow 0.3s;
+      width: 100%;
+    }
+    #modal .content input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 6px rgba(255, 204, 0, 0.8);
+      outline: none;
+    }
+    #photoLabel {
+      display: inline-block;
+      width: 100%;
+      padding: .4rem;
+      margin: .25rem 0;
+      background: var(--accent);
+      color: #111;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      text-align: center;
+    }
+    #photoLabel:hover {
+      background: #e6b800;
+    }
+    #photoName {
+      display: block;
+      font-size: 12px;
+      margin-top: .2rem;
+      color: var(--fg);
+    }
+    #modal .actions {
+      display: flex;
+      justify-content: center;
+      gap: .5rem;
+      margin-top: .5rem;
+    }
+    .action-btn {
+      padding: .4rem .8rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .action-btn.add {
+      background: var(--accent);
+      color: #111;
+    }
+    .action-btn.cancel {
+      background: var(--danger);
+      color: #fff;
+    }
+    video { width: 100%; max-height: 300px; border: 2px solid var(--accent); border-radius: 6px; }
+  
+    .barcode-field { position: relative; display:flex; align-items:center; }
+    .barcode-field input { flex:1; padding-right:2rem; }
+    .barcode-field .scan-icon {
+      position: absolute;
+      right: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--accent);
+    }
+    .barcode-field .scan-icon:hover { color: #e6b800; }
+
+  
+.product {
+  background: linear-gradient(145deg, #1a1a1a, #000);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.6), inset 0 2px 6px rgba(255,255,255,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.8);
+}
+.product img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  border-radius: 12px;
+}
+
 </style>
 </head>
 <body>
-<!-- ... (HTML content truncated for brevity, full content included in assistant's message) ... -->
+  <header>
+    <div class="left">
+      <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+      <span>Product Manager</span>
+    </div>
+    <div class="right">
+      <button class="icon-btn" onclick="toggleSearch()">🔍</button>
+      <button class="icon-btn" onclick="startScanner()">📷</button>
+      <button class="icon-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+  </header>
+
+  <div id="container">
+    <aside id="sidebar">
+      <button>🏠 Dashboard</button>
+      <button>📊 Sales</button>
+      <button>⚙️ Settings</button>
+    </aside>
+    <div id="overlay" onclick="closeSidebar()"></div>
+    <main>
+      <div id="searchBar" style="display:none;">
+        <input type="text" id="search" placeholder="Search by name">
+      </div>
+      <div id="scanner" style="display:none;">
+        <video id="scannerVideo"></video>
+        <button onclick="stopScanner()">Close Scanner</button>
+      </div>
+      <div id="productList"></div>
+    </main>
+  </div>
+
+  <button id="addBtn" onclick="openModal()">＋</button>
+
+  <div id="modal">
+    <div class="content">
+      <h3>Add Product</h3>
+      <form id="productForm">
+        <input type="text" id="name" placeholder="Product Name" required>
+        <input type="number" id="buyPrice" placeholder="Buy Price" required>
+        <input type="number" id="sellPrice" placeholder="Sell Price" required>
+        <input type="number" id="stock" placeholder="Stock Quantity" required>
+        
+<div class="barcode-field">
+  <input type="text" id="barcode" placeholder="Barcode (optional)">
+  <span class="scan-icon" onclick="startScannerForField()">📷</span>
+</div>
+
+
+        <input type="file" id="image" accept="image/*" required style="display:none">
+        <label for="image" id="photoLabel">📷 Add Photo</label>
+        <span id="photoName"></span>
+
+        <div class="actions">
+          <button type="submit" class="action-btn add">Add</button>
+          <button type="button" onclick="closeModal()" class="action-btn cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()">
+const modalDetails = document.getElementById("modalDetails");
+const detailsContent = document.getElementById("detailsContent");
+
+function openDetails(p){
+  detailsContent.innerHTML = `
+    ${p.image ? `<img src="${p.image}" alt="Product" style="max-width:100%; border-radius:8px; margin-bottom:.5rem;">` : ""}
+    <p><b>Name:</b> ${p.name}</p>
+    <p><b>Buy Price:</b> ${p.buyPrice}</p>
+    <p><b>Sell Price:</b> ${p.sellPrice}</p>
+    <p><b>Stock:</b> ${p.stock}</p>
+  `;
+  modalDetails.style.display = "flex";
+}
+
+function closeDetails(){
+  modalDetails.style.display = "none";
+}
+
+modalDetails.addEventListener('click', function(e) {
+  if (e.target === modalDetails) closeDetails();
+});
+
+</script>
+  <script>
+    function loadLocalQuagga(){
+      var s=document.createElement('script');
+      s.src='quagga.min.js';
+      document.body.appendChild(s);
+    }
+  </script>
+
+  <script>
+    let db;
+    const request = indexedDB.open("ProductManagerDB", 1);
+    request.onupgradeneeded = function(event) {
+      db = event.target.result;
+      const store = db.createObjectStore("products", { keyPath: "id", autoIncrement: true });
+      store.createIndex("name", "name", { unique: false });
+      store.createIndex("barcode", "barcode", { unique: false });
+    };
+    request.onsuccess = function(event) { db = event.target.result; renderProducts(); };
+
+    function saveProduct(product) {
+      const tx = db.transaction("products", "readwrite");
+      tx.objectStore("products").add(product);
+      tx.oncomplete = () => renderProducts();
+    }
+    function deleteProduct(id) {
+      const tx = db.transaction("products", "readwrite");
+      tx.objectStore("products").delete(id);
+      tx.oncomplete = () => renderProducts(document.getElementById("search").value);
+    }
+    function renderProducts(filter = "") {
+      const tx = db.transaction("products", "readonly");
+      const store = tx.objectStore("products");
+      const req = store.getAll();
+      req.onsuccess = function() {
+        const products = req.result;
+        const productList = document.getElementById("productList");
+        productList.innerHTML = "";
+        products.filter(p =>
+          p.name.toLowerCase().includes(filter.toLowerCase()) ||
+          (p.barcode && p.barcode.includes(filter))
+        ).forEach(p => {
+          const div = document.createElement("div");
+          div.className = "product";
+          div.innerHTML = `
+            ${p.image ? `<img src="${p.image}" alt="Product">` : ""}
+            <h3>${p.name}</h3>
+            <p>Buy: <b>${p.buyPrice}</b></p>
+            <p>Sell: <b>${p.sellPrice}</b></p>
+            <p>Stock: <b>${p.stock}</b></p>
+            ${p.barcode ? `<p>Barcode: <b>${p.barcode}</b></p>` : ""}
+            <button onclick="deleteProduct(${p.id})">🗑 Delete</button>
+          `;
+          productList.appendChild(div);
+        });
+      };
+    }
+
+    document.getElementById("search").addEventListener("input", e => renderProducts(e.target.value));
+
+    function toggleSidebar(){ document.getElementById("sidebar").classList.toggle("open"); document.getElementById("overlay").style.display="block"; }
+    function closeSidebar(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").style.display="none"; }
+    function toggleTheme(){ document.body.classList.toggle("light"); }
+    const modal=document.getElementById("modal");
+    function openModal(){ modal.style.display="flex"; }
+    function closeModal(){ modal.style.display="none"; }
+
+    
+    // Close modal when clicking outside content
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+    
+    const form=document.getElementById("productForm");
+    form.addEventListener("submit", e=>{
+      e.preventDefault();
+      const name=document.getElementById("name").value.trim();
+      const buyPrice=document.getElementById("buyPrice").value.trim();
+      const sellPrice=document.getElementById("sellPrice").value.trim();
+      const stock=document.getElementById("stock").value.trim();
+      const barcode=document.getElementById("barcode").value.trim();
+      const file=document.getElementById("image").files[0];
+      if(!name||!buyPrice||!sellPrice||!stock||!file){ alert("⚠️ Fill all required fields."); return; }
+      const reader=new FileReader();
+      reader.onload=function(){
+        const product={name,buyPrice,sellPrice,stock,image:reader.result};
+        if(barcode) product.barcode=barcode;
+        saveProduct(product);
+        form.reset(); document.getElementById("photoName").innerText=""; closeModal();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("image").addEventListener("change", function(){
+      const fileName=this.files.length ? this.files[0].name : "";
+      document.getElementById("photoName").innerText=fileName;
+    });
+
+    function toggleSearch(){
+      const bar=document.getElementById("searchBar");
+      bar.style.display=bar.style.display==="none"?"flex":"none";
+    }
+
+    
+    
+    let scannerTargetField = null;
+    function startScannerForField(){
+      scannerTargetField = document.getElementById("barcode");
+      startScanner(true);
+    }
+
+    function startScanner(){
+      const scannerEl = document.getElementById("scanner");
+      scannerEl.style.display="block";
+      const videoEl = document.getElementById("scannerVideo");
+
+      // Request camera
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(function(stream) {
+            videoEl.srcObject = stream;
+            videoEl.setAttribute("playsinline", true);
+            videoEl.play();
+          })
+          .catch(function(err){ alert("Camera access denied: " + err); });
+      }
+
+      if(typeof Quagga==="undefined"){ alert("Barcode scanner not loaded."); return; }
+      Quagga.init({
+        inputStream:{ name:"Live", type:"LiveStream", target:videoEl },
+        decoder:{ readers:["ean_reader","code_128_reader","upc_reader","upc_e_reader"] }
+      }, err=>{
+        if(err){ console.error(err); return; }
+        Quagga.start();
+      });
+      Quagga.onDetected(data=>{
+        document.getElementById("search").value=data.codeResult.code;
+        renderProducts(data.codeResult.code);
+        stopScanner();
+      });
+    }
+    
+    function stopScanner(){
+      if(typeof Quagga!=="undefined"){ Quagga.stop(); }
+      document.getElementById("scanner").style.display="none";
+    }
+  </script>
 </body>
 </html>
