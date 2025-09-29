@@ -259,50 +259,33 @@ modalDetails.addEventListener('click', function(e) {
       tx.objectStore("products").delete(id);
       tx.oncomplete = () => renderProducts(document.getElementById("search").value);
     }
-    function renderProducts(filter = "") {
-      const tx = db.transaction("products", "readonly");
-      const store = tx.objectStore("products");
-      const req = store.getAll();
-      req.onsuccess = function() {
-        const products = req.result;
-        const productList = document.getElementById("productList");
-        productList.innerHTML = "";
-        products.filter(p =>
-          p.name.toLowerCase().includes(filter.toLowerCase()) ||
-          (p.barcode && p.barcode.includes(filter))
-        ).forEach(p => {
-          const div = document.createElement("div");
-          div.className = "product";
-          div.innerHTML = `
-            ${p.image ? `<img src="${p.image}" alt="Product">` : ""}
-            <h3>${p.name}</h3>
-            <p>Buy: <b>${p.buyPrice}</b></p>
-            <p>Sell: <b>${p.sellPrice}</b></p>
-            <p>Stock: <b>${p.stock}</b></p>
-            ${p.barcode ? `<p>Barcode: <b>${p.barcode}</b></p>` : ""}
-            <button onclick="deleteProduct(${p.id})">🗑 Delete</button>
-          `;
-          productList.appendChild(div);
-        });
-      };
-    }
-
-    document.getElementById("search").addEventListener("input", e => renderProducts(e.target.value));
-
-    function toggleSidebar(){ document.getElementById("sidebar").classList.toggle("open"); document.getElementById("overlay").style.display="block"; }
-    function closeSidebar(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").style.display="none"; }
-    function toggleTheme(){ document.body.classList.toggle("light"); }
-    const modal=document.getElementById("modal");
-    function openModal(){ modal.style.display="flex"; }
-    function closeModal(){ modal.style.display="none"; }
-
     
-    // Close modal when clicking outside content
-    modal.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        closeModal();
+function renderProducts(filter = "") {
+  const tx = db.transaction("products", "readonly");
+  const store = tx.objectStore("products");
+  const req = store.getAll();
+  req.onsuccess = function() {
+    const products = req.result;
+    const productList = document.getElementById("productList");
+    productList.innerHTML = "";
+    products.filter(p =>
+      p.name.toLowerCase().includes(filter.toLowerCase()) ||
+      (p.barcode && p.barcode.includes(filter))
+    ).forEach(p => {
+      const div = document.createElement("div");
+      div.className = "product";
+      div.innerHTML = `
+        ${p.image ? `<img src="${p.image}" alt="Product" style="cursor:pointer;">` : ""}
+        <p style="font-size:14px; margin-top:.3rem;"><b>${p.sellPrice}</b></p>
+      `;
+      if (p.image) {
+        div.querySelector("img").addEventListener("click", () => openDetails(p));
       }
+      productList.appendChild(div);
     });
+  };
+}
+
     
     const form=document.getElementById("productForm");
     form.addEventListener("submit", e=>{
