@@ -206,7 +206,26 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()">
+  
+<!-- Firebase App and Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js"></script>
+<script>
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCTZMruhb_jwy4penXL3-rtcLFRejfBPnk",
+  authDomain: "product-manager-24d14.firebaseapp.com",
+  projectId: "product-manager-24d14",
+  storageBucket: "product-manager-24d14.firebasestorage.app",
+  messagingSenderId: "307721858097",
+  appId: "1:307721858097:web:401f4d02bd5bdc9a6e3910",
+  measurementId: "G-K9E2ZH17WS"
+};
+firebase.initializeApp(firebaseConfig);
+const dbFirestore = firebase.firestore();
+</script>
+
+<script src="https://unpkg.com/quagga/dist/quagga.min.js" onerror="loadLocalQuagga()">
 const modalDetails = document.getElementById("modalDetails");
 const detailsContent = document.getElementById("detailsContent");
 
@@ -239,56 +258,61 @@ modalDetails.addEventListener('click', function(e) {
   </script>
 
   <script>
-    let db;
-    const request = indexedDB.open("ProductManagerDB", 1);
-    request.onupgradeneeded = function(event) {
-      db = event.target.result;
-      const store = db.createObjectStore("products", { keyPath: "id", autoIncrement: true });
-      store.createIndex("name", "name", { unique: false });
-      store.createIndex("barcode", "barcode", { unique: false });
-    };
-    request.onsuccess = function(event) { db = event.target.result; renderProducts(); };
+    
 
+    function toggleSidebar(){ document.getElementById("sidebar").classList.toggle("open"); document.getElementById("overlay").style.display="block"; }
+    function closeSidebar(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").style.display="none"; }
+    function toggleTheme(){ document.body.classList.toggle("light"); }
+    const modal=document.getElementById("modal");
+    function openModal(){ modal.style.display="flex"; }
+    function closeModal(){ modal.style.display="none"; }
+
+    
+    
+    // Firestore functions replacing IndexedDB
     function saveProduct(product) {
-      const tx = db.transaction("products", "readwrite");
-      tx.objectStore("products").add(product);
-      tx.oncomplete = () => renderProducts();
+      dbFirestore.collection("products").add(product).then(()=>console.log("Product saved"));
     }
     function deleteProduct(id) {
-      const tx = db.transaction("products", "readwrite");
-      tx.objectStore("products").delete(id);
-      tx.oncomplete = () => renderProducts(document.getElementById("search").value);
+      dbFirestore.collection("products").doc(id).delete().then(()=>console.log("Product deleted"));
     }
-    
-function renderProducts(filter = "") {
-  const tx = db.transaction("products", "readonly");
-  const store = tx.objectStore("products");
-  const req = store.getAll();
-  req.onsuccess = function() {
-    const products = req.result;
-    const productList = document.getElementById("productList");
-    productList.innerHTML = "";
-    products.filter(p =>
-      p.name.toLowerCase().includes(filter.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(filter))
-    ).forEach(p => {
-      const div = document.createElement("div");
-      div.className = "product";
-      div.innerHTML = `
-        ${p.image ? `<img src="${p.image}" alt="Product" style="cursor:pointer;">` : ""}
-        <p style="font-size:14px; margin-top:.3rem; position:relative;">
-          <span style="position:absolute; top:-10px; left:-5px; font-size:12px;">د</span>
-          <b>${p.sellPrice}</b>
-        </p>
-      `;
-      if (p.image) {
-        div.querySelector("img").addEventListener("click", () => openDetails(p));
-      }
-      productList.appendChild(div);
-    });
-  };
-}
+    function renderProducts(filter = "") {
+      dbFirestore.collection("products").onSnapshot(snapshot => {
+        const products = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data.id = doc.id;
+          products.push(data);
+        });
+        const productList = document.getElementById("productList");
+        productList.innerHTML = "";
+        products.filter(p =>
+          p.name.toLowerCase().includes(filter.toLowerCase()) ||
+          (p.barcode && p.barcode.includes(filter))
+        ).forEach(p => {
+          const div = document.createElement("div");
+          div.className = "product";
+          div.innerHTML = `
+            ${p.image ? `<img src="${p.image}" alt="Product">` : ""}
+            <h3>${p.name}</h3>
+            <p>Buy: <b>${p.buyPrice}</b></p>
+            <p>Sell: <b>${p.sellPrice}</b></p>
+            <p>Stock: <b>${p.stock}</b></p>
+            ${p.barcode ? `<p>Barcode: <b>${p.barcode}</b></p>` : ""}
+            <button onclick="deleteProduct('${p.id}')">🗑 Delete</button>
+          `;
+          productList.appendChild(div);
+        });
+      });
+    }
+    renderProducts();
 
+// Close modal when clicking outside content
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
     
     const form=document.getElementById("productForm");
     form.addEventListener("submit", e=>{
