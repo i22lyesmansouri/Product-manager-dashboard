@@ -276,7 +276,10 @@ function renderProducts(filter = "") {
       div.className = "product";
       div.innerHTML = `
         ${p.image ? `<img src="${p.image}" alt="Product" style="cursor:pointer;">` : ""}
-        <p style="font-size:14px; margin-top:.3rem;"><b>${p.sellPrice}</b></p>
+        <p style="font-size:14px; margin-top:.3rem; position:relative;">
+          <span style="position:absolute; top:-10px; left:-5px; font-size:12px;">د</span>
+          <b>${p.sellPrice}</b>
+        </p>
       `;
       if (p.image) {
         div.querySelector("img").addEventListener("click", () => openDetails(p));
