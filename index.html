@@ -168,10 +168,34 @@
     .action-btn.add { background:#ffcc00; color:#111; }
     .action-btn.cancel { background:#dc3545; color:#fff; }
 
-.menu-item.active {
-  background:#ffcc00;
-  color:#111;
-  font-weight:bold;
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+header .center {
+  flex:1;
+  display:flex;
+  justify-content:center;
+}
+header .search-wrapper {
+  max-width:200px;
+  flex:1;
+}
+header .right {
+  margin-left:1rem;
+}
+header .user-icon {
+  font-size:20px;
+  cursor:pointer;
+}
+.menu-item {
+  padding:0.8rem 1rem;
+  cursor:pointer;
+  border-bottom:1px solid #eee;
+}
+.menu-item:hover {
+  background:#f5f5f5;
 }
 
   </style>
@@ -183,13 +207,30 @@
         <span class="hamburger">☰</span>
         <img src="icon-192.png" class="logo" alt="Logo">
       </div>
+      <div class="center">
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
         <input type="text" id="search" placeholder="Search...">
       </div>
+      </div>
+      <div class="right"><span class="user-icon">👤</span></div>
     </header>
 
-    <main>
+    <!-- Sidebar Menu -->
+<div id="sidebar" style="position:fixed; top:0; left:-220px; width:200px; height:100%;
+    background:#fff; box-shadow:2px 0 6px rgba(0,0,0,0.2); transition:left .3s ease; z-index:300;">
+  <div style="padding:1rem; font-weight:bold; border-bottom:1px solid #ddd;">Menu</div>
+  <ul style="list-style:none; padding:0; margin:0;">
+    <li class="menu-item">Dashboard</li>
+    <li class="menu-item">Products</li>
+    <li class="menu-item">Settings</li>
+    <li class="menu-item">Logout</li>
+  </ul>
+</div>
+<div id="sidebarOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.4); z-index:250;"></div>
+
+<main>
       <div id="productList"></div>
     </main>
   </div>
@@ -382,35 +423,6 @@
       const id=Number(document.getElementById("editId").value);
       deleteProduct(id); closeEditModal();
     }
-  // --- Sidebar toggle ---
-const sidebar = document.getElementById("sidebar");
-const sidebarOverlay = document.getElementById("sidebarOverlay");
-const hamburger = document.querySelector(".hamburger");
-
-hamburger.addEventListener("click", () => {
-  if (sidebar && sidebarOverlay) {
-    sidebar.style.left = "0";
-    sidebarOverlay.style.display = "block";
-  }
-});
-
-if (sidebarOverlay) {
-  sidebarOverlay.addEventListener("click", () => {
-    sidebar.style.left = "-220px";
-    sidebarOverlay.style.display = "none";
-  });
-}
-
-// --- Sidebar menu active state ---
-document.querySelectorAll(".menu-item").forEach(item => {
-  item.addEventListener("click", () => {
-    document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active"));
-    item.classList.add("active");
-    sidebar.style.left = "-220px";
-    sidebarOverlay.style.display = "none";
-  });
-});
-
-</script>
+  </script>
 </body>
 </html>
