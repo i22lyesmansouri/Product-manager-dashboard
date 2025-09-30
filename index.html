@@ -1,39 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Product Manager Dashboard</title>
   <style>
-    html, body { margin:0; font-family:Arial, sans-serif; background:#fff; color:#111; max-width:100%; overflow-x:hidden; }
-    header { background:#fff; padding:.5rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; box-shadow:0 2px 6px rgba(0,0,0,0.1); position:sticky; top:0; z-index:200; width:100%; }
-    header .logo { height:40px; width:auto; object-fit:contain; display:block; margin-left:10px; }
-    header .left { position:relative; display:flex; align-items:center; gap:1rem; }
+    html, body {
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#fff;
+      color:#111;
+      max-width:100%;
+      overflow-x:hidden; /* prevent horizontal scroll */
+    }
+    header {
+      background:#fff;
+      padding:.5rem 1rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap; /* responsive */
+      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+      position:sticky;
+      top:0;
+      z-index:200;
+      width:100%;
+    }
+    header .logo {
+      height:40px;
+      width:auto;
+      object-fit:contain;
+      display:block;
+      margin-left:10px; /* shift logo a bit to right */
+    }
+    header .left { display:flex; align-items:center; gap:1rem; }
     .hamburger { font-size:20px; cursor:pointer; color:#ffcc00; }
-    .menu { position:absolute; top:48px; left:0; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.15); display:none; z-index:500; min-width:160px; flex-direction:column; }
-    .menu p { margin:0; padding:0.6rem 1rem; cursor:pointer; font-size:14px; color:#333; display:flex; align-items:center; gap:8px; }
-    .menu p:hover { background:#ffcc00; color:#111; }
+
     header .search-wrapper { position:relative; }
-    header .search-wrapper .search-icon { position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px; color:#aaa; }
-    header .search-wrapper input { padding:.3rem .3rem .3rem 24px; border:1px solid #ccc; border-radius:4px; width:180px; }
-    @media (max-width:600px) { header .search-wrapper input { width:120px; } }
+    header .search-wrapper .search-icon {
+      position:absolute; left:8px; top:50%; transform:translateY(-50%);
+      font-size:14px; color:#aaa;
+    }
+    header .search-wrapper input {
+      padding:.3rem .3rem .3rem 24px;
+      border:1px solid #ccc;
+      border-radius:4px;
+      width:180px; /* smaller search length */
+    }
+    @media (max-width:600px) {
+      header .search-wrapper input { width:120px; }
+    }
+
     main { flex:1; }
-    #productList { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:.5rem; padding:1rem; width:100%; box-sizing:border-box; }
-    .product { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1); text-align:center; }
-    .product img { display:block; width:100%; height:180px; object-fit:cover; margin:0; border-radius:0; cursor:pointer; }
-    .product-info { display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0.8rem; font-size:14px; font-weight:bold; }
+    #productList {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+      gap:.5rem;
+      padding:1rem;
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    .product {
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+      text-align:center;
+    }
+    .product img {
+      display:block;
+      width:100%;
+      height:180px; /* uniform image size */
+      object-fit:cover;
+      margin:0;
+      border-radius:0;
+      cursor:pointer;
+    }
+
+    .product-info {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:0.5rem 0.8rem;
+      font-size:14px;
+      font-weight:bold;
+    }
     .product-info .name { color:#111; font-weight:normal; }
     .product-info .price { color:#111; }
-    #addBtn { position:fixed; bottom:20px; right:20px; background:#ffcc00; color:#111; border:none; border-radius:50%; width:50px; height:50px; font-size:1.6rem; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:250; }
-    #modal, #editModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:400; align-items:center; justify-content:center; }
-    #modal .content, #editModal .content { background:#fff; padding:1rem; border-radius:12px; width:100%; max-width:320px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-    #modal input, #editModal input { width:100%; margin:.3rem 0; padding:.4rem; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; }
+
+    #addBtn {
+      position:fixed;
+      bottom:20px;
+      right:20px;
+      background:#ffcc00;
+      color:#111;
+      border:none;
+      border-radius:50%;
+      width:50px;
+      height:50px;
+      font-size:1.6rem;
+      cursor:pointer;
+      box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      z-index:250;
+    }
+
+    #modal, #editModal {
+      display:none;
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.6);
+      z-index:400;
+      align-items:center;
+      justify-content:center;
+    }
+    #modal .content, #editModal .content {
+      background:#fff;
+      padding:1rem;
+      border-radius:12px;
+      width:100%;
+      max-width:300px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.2);
+    }
+    #modal input, #editModal input {
+      width:100%;
+      margin:.3rem 0;
+      padding:.4rem;
+      border:1px solid #ccc;
+      border-radius:6px;
+      box-sizing:border-box;
+    }
+
     .input-field { position:relative; display:flex; align-items:center; }
     .input-field input { flex:1; padding-right:5rem; }
-    .input-field .field-label { position:absolute; right:10px; font-size:12px; color:#888; pointer-events:none; }
-    #photoLabel, #editPhotoLabel { display:block; background:#ffcc00; color:#111; padding:.5rem; border-radius:6px; cursor:pointer; text-align:center; margin:.4rem 0; }
-    #photoName, #editPhotoName { font-size:12px; color:#555; display:block; text-align:center; }
-    .action-btn { padding:.4rem .8rem; border:none; border-radius:6px; cursor:pointer; margin:.2rem; }
+    .input-field .field-label {
+      position:absolute;
+      right:10px;
+      font-size:12px;
+      color:#888;
+      pointer-events:none;
+    }
+
+    #photoLabel, #editPhotoLabel {
+      display:block;
+      background:#ffcc00;
+      color:#111;
+      padding:.5rem;
+      border-radius:6px;
+      cursor:pointer;
+      text-align:center;
+      margin:.4rem 0;
+    }
+    #photoName, #editPhotoName {
+      font-size:12px;
+      color:#555;
+      display:block;
+      text-align:center;
+    }
+
+    .action-btn {
+      padding:.4rem .8rem;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      margin:.2rem;
+    }
     .action-btn.add { background:#ffcc00; color:#111; }
     .action-btn.cancel { background:#dc3545; color:#fff; }
   </style>
@@ -42,13 +173,8 @@
   <div style="flex:1;">
     <header>
       <div class="left">
-        <span class="hamburger" onclick="toggleMenu(event)">☰</span>
+        <span class="hamburger">☰</span>
         <img src="icon-192.png" class="logo" alt="Logo">
-        <div class="menu" id="menu">
-          <p onclick="exportCSV()">📤 Export CSV</p>
-          <p onclick="document.getElementById('importFile').click()">📥 Import CSV</p>
-          <input type="file" id="importFile" accept=".csv" style="display:none" onchange="importCSV(event)">
-        </div>
       </div>
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
@@ -108,7 +234,6 @@
   </div>
 
   <script>
-    // === IndexedDB setup ===
     let db;
     const request = indexedDB.open("ProductManagerDB", 1);
     request.onupgradeneeded = e => {
@@ -134,7 +259,6 @@
       tx.objectStore("products").delete(id);
       tx.oncomplete=()=>renderProducts();
     }
-
     function renderProducts(filter=""){
       const tx=db.transaction("products","readonly");
       const store=tx.objectStore("products");
@@ -144,7 +268,7 @@
         const list=document.getElementById("productList");
         list.innerHTML="";
         products.filter(p=>
-          (p.name&&p.name.toLowerCase().includes(filter.toLowerCase()))||
+          p.name.toLowerCase().includes(filter.toLowerCase())||
           (p.barcode&&p.barcode.includes(filter))
         ).forEach(p=>{
           const div=document.createElement("div");
@@ -162,7 +286,6 @@
 
     document.getElementById("search").addEventListener("input",e=>renderProducts(e.target.value));
 
-    // === Modal controls ===
     const modal=document.getElementById("modal");
     function openModal(){ modal.style.display="flex"; }
     function closeModal(){ modal.style.display="none"; }
@@ -251,75 +374,6 @@
     function deleteProductFromModal(){
       const id=Number(document.getElementById("editId").value);
       deleteProduct(id); closeEditModal();
-    }
-
-    // === Menu toggle ===
-    function toggleMenu(event){
-      event.stopPropagation();
-      const menu = document.getElementById("menu");
-      menu.style.display = (menu.style.display === "block") ? "none" : "block";
-    }
-    document.addEventListener("click", function(e){
-      const menu = document.getElementById("menu");
-      if(menu && !menu.contains(e.target) && !e.target.classList.contains("hamburger")){
-        menu.style.display = "none";
-      }
-    });
-
-    // === CSV Export ===
-    function exportCSV(){
-      const tx=db.transaction("products","readonly");
-      const store=tx.objectStore("products");
-      const req=store.getAll();
-      req.onsuccess=()=>{
-        const products=req.result;
-        if(products.length===0){alert("No products to export");return;}
-        let csv="id,name,buyPrice,sellPrice,stock,barcode,image\n";
-        products.forEach(p=>{
-          const row=[p.id,p.name,p.buyPrice,p.sellPrice,p.stock,p.barcode||"",p.image];
-          csv+=row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")+"\n";
-        });
-        const blob=new Blob([csv],{type:"text/csv"});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement("a");
-        a.href=url; a.download="products.csv";
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a);
-      };
-    }
-
-    // === CSV Import ===
-    function importCSV(event){
-      const file=event.target.files[0];
-      if(!file)return;
-      const reader=new FileReader();
-      reader.onload=e=>{
-        const lines=e.target.result.split(/\r?\n/);
-        const products=[];
-        for(let i=1;i<lines.length;i++){
-          if(!lines[i].trim())continue;
-          const parts=lines[i].split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
-          if(parts.length>=7){
-            const product={
-              id:Number(parts[0].replace(/(^"|"$)/g,"")),
-              name:parts[1].replace(/(^"|"$)/g,""),
-              buyPrice:parts[2].replace(/(^"|"$)/g,""),
-              sellPrice:parts[3].replace(/(^"|"$)/g,""),
-              stock:parts[4].replace(/(^"|"$)/g,""),
-              barcode:parts[5].replace(/(^"|"$)/g,""),
-              image:parts[6].replace(/(^"|"$)/g,"")
-            };
-            products.push(product);
-          }
-        }
-        const tx=db.transaction("products","readwrite");
-        const store=tx.objectStore("products");
-        store.clear().onsuccess=()=>{
-          products.forEach(p=>store.put(p));
-        };
-        tx.oncomplete=()=>renderProducts();
-      };
-      reader.readAsText(file);
     }
   </script>
 </body>
