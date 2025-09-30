@@ -167,6 +167,13 @@
     }
     .action-btn.add { background:#ffcc00; color:#111; }
     .action-btn.cancel { background:#dc3545; color:#fff; }
+
+.menu-item.active {
+  background:#ffcc00;
+  color:#111;
+  font-weight:bold;
+}
+
   </style>
 </head>
 <body>
@@ -375,6 +382,35 @@
       const id=Number(document.getElementById("editId").value);
       deleteProduct(id); closeEditModal();
     }
-  </script>
+  // --- Sidebar toggle ---
+const sidebar = document.getElementById("sidebar");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+const hamburger = document.querySelector(".hamburger");
+
+hamburger.addEventListener("click", () => {
+  if (sidebar && sidebarOverlay) {
+    sidebar.style.left = "0";
+    sidebarOverlay.style.display = "block";
+  }
+});
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener("click", () => {
+    sidebar.style.left = "-220px";
+    sidebarOverlay.style.display = "none";
+  });
+}
+
+// --- Sidebar menu active state ---
+document.querySelectorAll(".menu-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active"));
+    item.classList.add("active");
+    sidebar.style.left = "-220px";
+    sidebarOverlay.style.display = "none";
+  });
+});
+
+</script>
 </body>
 </html>
