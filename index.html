@@ -167,38 +167,36 @@
     }
     .action-btn.add { background:#ffcc00; color:#111; }
     .action-btn.cancel { background:#dc3545; color:#fff; }
-
-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: -220px;
+  width: 200px;
+  height: 100%;
+  background: #fff;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.1);
+  padding: 1rem;
+  transition: left 0.3s ease;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
-header .center {
-  flex:1;
-  display:flex;
-  justify-content:center;
+#sidebar.active {
+  left: 0;
 }
-header .search-wrapper {
-  max-width:200px;
-  flex:1;
-}
-header .right {
-  margin-left:1rem;
-}
-header .user-icon {
-  font-size:20px;
-  cursor:pointer;
-}
-.menu-item {
-  padding:0.8rem 1rem;
-  cursor:pointer;
-  border-bottom:1px solid #eee;
-}
-.menu-item:hover {
-  background:#f5f5f5;
+#sidebar button, #sidebar label {
+  background: #ffcc00;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #111;
+  text-align: center;
 }
 
-  </style>
+</style>
 </head>
 <body>
   <div style="flex:1;">
@@ -207,30 +205,24 @@ header .user-icon {
         <span class="hamburger">☰</span>
         <img src="icon-192.png" class="logo" alt="Logo">
       </div>
-      <div class="center">
       <div class="search-wrapper">
+      
         <span class="search-icon">🔍</span>
         <input type="text" id="search" placeholder="Search...">
       </div>
-      </div>
-      <div class="right"><span class="user-icon">👤</span></div>
     </header>
 
-    <!-- Sidebar Menu -->
-<div id="sidebar" style="position:fixed; top:0; left:-220px; width:200px; height:100%;
-    background:#fff; box-shadow:2px 0 6px rgba(0,0,0,0.2); transition:left .3s ease; z-index:300;">
-  <div style="padding:1rem; font-weight:bold; border-bottom:1px solid #ddd;">Menu</div>
-  <ul style="list-style:none; padding:0; margin:0;">
-    <li class="menu-item">Dashboard</li>
-    <li class="menu-item">Products</li>
-    <li class="menu-item">Settings</li>
-    <li class="menu-item">Logout</li>
-  </ul>
+<!-- Sidebar -->
+<div id="sidebar">
+  <button onclick="exportProducts()">Export Products</button>
+  <label style="cursor:pointer;">
+    Import Products
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importProducts(event)">
+  </label>
 </div>
-<div id="sidebarOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.4); z-index:250;"></div>
 
-<main>
+
+    <main>
       <div id="productList"></div>
     </main>
   </div>
@@ -423,6 +415,113 @@ header .user-icon {
       const id=Number(document.getElementById("editId").value);
       deleteProduct(id); closeEditModal();
     }
-  </script>
+  
+
+function exportProducts() {
+  const tx = db.transaction("products", "readonly");
+  const store = tx.objectStore("products");
+  const req = store.getAll();
+  req.onsuccess = () => {
+    const data = req.result;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "products.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+}
+
+function importProducts(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      if (!Array.isArray(importedData)) {
+        alert("Invalid file format");
+        return;
+      }
+      const tx = db.transaction("products", "readwrite");
+      const store = tx.objectStore("products");
+      importedData.forEach(p => {
+        delete p.id; // avoid conflicts
+        store.add(p);
+      });
+      tx.oncomplete = () => renderProducts();
+      alert("Import successful!");
+    } catch (err) {
+      alert("Error importing file: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function importProducts(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    JSZip.loadAsync(e.target.result).then(zip => {
+      return zip.file("products.json").async("string");
+    }).then(text => {
+      try {
+        const importedData = JSON.parse(text);
+        if (!Array.isArray(importedData)) {
+          alert("Invalid file format");
+          return;
+        }
+        const tx = db.transaction("products", "readwrite");
+        const store = tx.objectStore("products");
+        importedData.forEach(p => {
+          delete p.id; // avoid conflicts
+          store.add(p);
+        });
+        tx.oncomplete = () => renderProducts();
+        alert("Import successful!");
+      } catch (err) {
+        alert("Error importing file: " + err.message);
+      }
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+
+
+// Sidebar toggle
+const sidebar = document.getElementById("sidebar");
+const hamburger = document.querySelector(".hamburger");
+
+// Toggle sidebar when clicking hamburger
+hamburger.addEventListener("click", (e) => {
+  e.stopPropagation();
+  sidebar.classList.toggle("active");
+});
+
+// Close sidebar when clicking outside
+window.addEventListener("click", (e) => {
+  if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+    sidebar.classList.remove("active");
+  }
+});
+
+
+
+// Close modals when clicking outside content
+window.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    closeModal();
+  }
+  if (e.target === editModal) {
+    closeEditModal();
+  }
+});
+
+</script>
 </body>
 </html>
