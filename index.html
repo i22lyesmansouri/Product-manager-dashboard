@@ -1,273 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Product Manager Dashboard</title>
   <style>
-    html, body {
-      margin:0;
-      font-family:Arial, sans-serif;
-      background:#fff;
-      color:#111;
-      max-width:100%;
-      overflow-x:hidden; /* prevent horizontal scroll */
-    }
-    header {
-      background:#fff;
-      padding:.5rem 1rem;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      flex-wrap:wrap; /* responsive */
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      position:sticky;
-      top:0;
-      z-index:200;
-      width:100%;
-    }
-    header .logo {
-      height:40px;
-      width:auto;
-      object-fit:contain;
-      display:block;
-      margin-left:10px; /* shift logo a bit to right */
-    }
-    header .left { display:flex; align-items:center; gap:1rem; }
+    html, body { margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; min-height:100%; }
+    header { background:#fff; padding:.5rem 1rem; display:flex; justify-content:space-between; align-items:center;
+             box-shadow:0 2px 6px rgba(0,0,0,0.1); position:sticky; top:0; z-index:200; }
+    .left { display:flex; align-items:center; gap:1rem; }
+    .logo { height:40px; width:auto; object-fit:contain; display:block; margin-left:10px; }
     .hamburger { font-size:20px; cursor:pointer; color:#ffcc00; }
+    .search-wrapper { position:relative; }
+    .search-icon { position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px; color:#aaa; }
+    .search-wrapper input { padding:.3rem .3rem .3rem 24px; border:1px solid #ccc; border-radius:4px; width:180px; }
+    @media (max-width:600px) { .search-wrapper input { width:120px; } }
 
-    header .search-wrapper { position:relative; }
-    header .search-wrapper .search-icon {
-      position:absolute; left:8px; top:50%; transform:translateY(-50%);
-      font-size:14px; color:#aaa;
-    }
-    header .search-wrapper input {
-      padding:.3rem .3rem .3rem 24px;
-      border:1px solid #ccc;
-      border-radius:4px;
-      width:180px; /* smaller search length */
-    }
-    @media (max-width:600px) {
-      header .search-wrapper input { width:120px; }
-    }
+    main { padding:1rem; min-height: calc(100vh - 120px); }
+    #productList { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:.6rem; }
 
-    main { flex:1; }
-    #productList {
-      display:grid;
-      grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
-      gap:.5rem;
-      padding:1rem;
-      width:100%;
-      box-sizing:border-box;
-    }
+    .product { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.08); text-align:center; }
+    .product img { width:100%; height:140px; object-fit:cover; cursor:pointer; display:block; }
+    .product-info { display:flex; justify-content:space-between; align-items:center; padding:.5rem .7rem; font-size:14px; }
+    .product-info .name { color:#111; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+    .product-info .price { color:#111; font-weight:700; }
 
-    .product {
-      background:#fff;
-      border-radius:12px;
-      overflow:hidden;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      text-align:center;
-    }
-    .product img {
-      display:block;
-      width:100%;
-      height:180px; /* uniform image size */
-      object-fit:cover;
-      margin:0;
-      border-radius:0;
-      cursor:pointer;
-    }
+    .product-actions { display:flex; gap:.4rem; justify-content:center; padding-bottom:.6rem; }
+    .action-btn { padding:.35rem .6rem; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
+    .add-btn { background:#ffcc00; color:#111; }
+    .edit-btn { background:#007bff; color:#fff; }
+    .sale-btn { background:#28a745; color:#fff; }
 
-    .product-info {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:0.5rem 0.8rem;
-      font-size:14px;
-      font-weight:bold;
-    }
-    .product-info .name { color:#111; font-weight:normal; }
-    .product-info .price { color:#111; }
+    #addBtn { position:fixed; bottom:20px; right:20px; background:#ffcc00; color:#111; border:none; border-radius:50%; width:54px; height:54px; font-size:1.6rem; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:250; }
 
-    #addBtn {
-      position:fixed;
-      bottom:20px;
-      right:20px;
-      background:#ffcc00;
-      color:#111;
-      border:none;
-      border-radius:50%;
-      width:50px;
-      height:50px;
-      font-size:1.6rem;
-      cursor:pointer;
-      box-shadow:0 2px 6px rgba(0,0,0,0.3);
-      z-index:250;
-    }
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:400; align-items:center; justify-content:center; }
+    .modal .content { background:#fff; padding:1rem; border-radius:12px; width:100%; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2); }
+    .modal h3 { margin:0 0 .5rem 0; }
+    .modal form input[type="text"], .modal form input[type="number"] { width:100%; padding:.45rem; margin:.35rem 0; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; }
+    label.file-btn { display:block; background:#ffcc00; color:#111; padding:.5rem; border-radius:6px; cursor:pointer; text-align:center; margin:.4rem 0; }
+    .small { font-size:13px; color:#555; }
 
-    #modal, #editModal {
-      display:none;
-      position:fixed;
-      top:0; left:0; right:0; bottom:0;
-      background:rgba(0,0,0,0.6);
-      z-index:400;
-      align-items:center;
-      justify-content:center;
-    }
-    #modal .content, #editModal .content {
-      background:#fff;
-      padding:1rem;
-      border-radius:12px;
-      width:100%;
-      max-width:300px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.2);
-    }
-    #modal input, #editModal input {
-      width:100%;
-      margin:.3rem 0;
-      padding:.4rem;
-      border:1px solid #ccc;
-      border-radius:6px;
-      box-sizing:border-box;
-    }
+    #sidebar { position: fixed; top: 0; left: -220px; width: 200px; height: 100%; background: #fff; box-shadow: 2px 0 6px rgba(0,0,0,0.1); padding: 1rem; transition: left 0.25s ease; z-index:300; display:flex; flex-direction:column; gap:8px; }
+    #sidebar.active { left:0; }
+    #sidebar button, #sidebar label { background: #ffcc00; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; color: #111; text-align: center; }
 
-    .input-field { position:relative; display:flex; align-items:center; }
-    .input-field input { flex:1; padding-right:5rem; }
-    .input-field .field-label {
-      position:absolute;
-      right:10px;
-      font-size:12px;
-      color:#888;
-      pointer-events:none;
-    }
-
-    #photoLabel, #editPhotoLabel {
-      display:block;
-      background:#ffcc00;
-      color:#111;
-      padding:.5rem;
-      border-radius:6px;
-      cursor:pointer;
-      text-align:center;
-      margin:.4rem 0;
-    }
-    #photoName, #editPhotoName {
-      font-size:12px;
-      color:#555;
-      display:block;
-      text-align:center;
-    }
-
-    .action-btn {
-      padding:.4rem .8rem;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-      margin:.2rem;
-    }
-    .action-btn.add { background:#ffcc00; color:#111; }
-    .action-btn.cancel { background:#dc3545; color:#fff; }
-  
-#sidebar {
-  position: fixed;
-  top: 0;
-  left: -220px;
-  width: 200px;
-  height: 100%;
-  background: #fff;
-  box-shadow: 2px 0 6px rgba(0,0,0,0.1);
-  padding: 1rem;
-  transition: left 0.3s ease;
-  z-index: 300;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-#sidebar.active {
-  left: 0;
-}
-#sidebar button, #sidebar label {
-  background: #ffcc00;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #111;
-  text-align: center;
-}
-
-</style>
+    .footer-note { text-align:center; color:#666; font-size:13px; margin-top:12px; }
+  </style>
 </head>
 <body>
-  <div style="flex:1;">
-    <header>
-      <div class="left">
-        <span class="hamburger">☰</span>
-        <img src="icon-192.png" class="logo" alt="Logo">
-      </div>
-      <div class="search-wrapper">
-      
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search" placeholder="Search...">
-      </div>
-    </header>
+  <header>
+    <div class="left">
+      <span class="hamburger">☰</span>
+      <img src="icon-192.png" alt="Logo" class="logo">
+    </div>
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input id="search" placeholder="Search..." />
+    </div>
+  </header>
 
-<!-- Sidebar -->
-<div id="sidebar">
-  <button onclick="exportProducts()">Export Products</button>
-  <label style="cursor:pointer;">
-    Import Products
-    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importProducts(event)">
-  </label>
-</div>
-
-
-    <main>
-      <div id="productList"></div>
-    </main>
+  <div id="sidebar">
+    <button onclick="exportProducts()">Export Products</button>
+    <label style="cursor:pointer;">
+      Import Products
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importProducts(event)">
+    </label>
+    <div class="footer-note">Offline & IndexedDB</div>
   </div>
 
-  <button id="addBtn" onclick="openModal()">＋</button>
+  <main>
+    <div id="productList"></div>
+  </main>
 
-  <!-- Add Modal -->
-  <div id="modal">
+  <button id="addBtn" title="Add product">＋</button>
+
+  <div id="modal" class="modal">
     <div class="content">
       <h3>Add Product</h3>
       <form id="productForm">
-        <input type="text" id="name" placeholder="Product Name" required>
-        <input type="number" id="buyPrice" placeholder="Buy Price" required>
-        <input type="number" id="sellPrice" placeholder="Sell Price" required>
-        <input type="number" id="stock" placeholder="Stock Quantity" required>
-        <input type="text" id="barcode" placeholder="Barcode">
-        <input type="file" id="image" accept="image/*" required style="display:none">
-        <label for="image" id="photoLabel">📷 Add Photo</label>
-        <span id="photoName"></span>
-        <div>
-          <button type="submit" class="action-btn add">Add</button>
-          <button type="button" class="action-btn cancel" onclick="closeModal()">Cancel</button>
+        <input type="text" id="name" placeholder="Product Name" required />
+        <input type="number" id="buyPrice" placeholder="Buy Price" step="0.01" min="0" required />
+        <input type="number" id="sellPrice" placeholder="Sell Price" step="0.01" min="0" required />
+        <input type="number" id="stock" placeholder="Stock Quantity" step="1" min="0" required />
+        <input type="file" id="image" accept="image/*" style="display:none" />
+        <label for="image" class="file-btn">📷 Add Photo</label>
+        <span id="photoName" class="small"></span>
+        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+          <button type="submit" class="action-btn add-btn">Add</button>
+          <button type="button" class="action-btn" style="background:#dc3545;color:#fff;" onclick="closeModal()">Cancel</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Edit Modal -->
-  <div id="editModal">
+  <div id="editModal" class="modal">
     <div class="content">
       <h3>Edit Product</h3>
       <form id="editForm">
-        <input type="hidden" id="editId">
-        <div class="input-field"><input type="text" id="editName" required><span class="field-label">Name</span></div>
-        <div class="input-field"><input type="number" id="editBuyPrice" required><span class="field-label">Buy Price</span></div>
-        <div class="input-field"><input type="number" id="editSellPrice" required><span class="field-label">Sell Price</span></div>
-        <div class="input-field"><input type="number" id="editStock" required><span class="field-label">Stock</span></div>
-        <div class="input-field"><input type="text" id="editBarcode"><span class="field-label">Barcode</span></div>
-        <input type="file" id="editImage" accept="image/*" style="display:none">
-        <label for="editImage" id="editPhotoLabel">📷 Change Photo</label>
-        <span id="editPhotoName"></span>
+        <input type="hidden" id="editId" />
+        <input type="text" id="editName" required />
+        <input type="number" id="editBuyPrice" step="0.01" min="0" required />
+        <input type="number" id="editSellPrice" step="0.01" min="0" required />
+        <input type="number" id="editStock" step="1" min="0" required />
+        <input type="file" id="editImage" accept="image/*" style="display:none" />
+        <label for="editImage" class="file-btn">📷 Change Photo</label>
+        <span id="editPhotoName" class="small"></span>
+        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+          <button type="submit" class="action-btn edit-btn">Update</button>
+          <button type="button" class="action-btn" style="background:#555;color:#fff;" onclick="deleteProductFromModal()">Delete</button>
+          <button type="button" class="action-btn" style="background:#ccc;" onclick="closeEditModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="saleModal" class="modal">
+    <div class="content">
+      <h3>Sale / Restock</h3>
+      <form id="saleForm">
+        <input type="hidden" id="saleId" />
         <div>
-          <button type="submit" class="action-btn add">Update</button>
-          <button type="button" class="action-btn cancel" onclick="closeEditModal()">Cancel</button>
-          <button type="button" class="action-btn cancel" style="background:#555;" onclick="deleteProductFromModal()">Delete</button>
+          <label>Quantity (positive = sold, negative = returned/restocked)</label>
+          <input type="number" id="saleQty" step="1" required />
+        </div>
+        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+          <button type="submit" class="action-btn sale-btn">Confirm</button>
+          <button type="button" class="action-btn" style="background:#ccc;" onclick="closeSaleModal()">Cancel</button>
         </div>
       </form>
     </div>
@@ -280,9 +138,10 @@
       db = e.target.result;
       const store = db.createObjectStore("products", { keyPath:"id", autoIncrement:true });
       store.createIndex("name","name",{unique:false});
-      store.createIndex("barcode","barcode",{unique:false});
     };
     request.onsuccess = e => { db = e.target.result; renderProducts(); };
+
+    function formatPrice(v){ return Number.parseFloat(v).toFixed(2); }
 
     function saveProduct(product){
       const tx=db.transaction("products","readwrite");
@@ -299,25 +158,28 @@
       tx.objectStore("products").delete(id);
       tx.oncomplete=()=>renderProducts();
     }
+
     function renderProducts(filter=""){
       const tx=db.transaction("products","readonly");
       const store=tx.objectStore("products");
       const req=store.getAll();
       req.onsuccess=()=>{
-        const products=req.result;
+        const products=req.result || [];
         const list=document.getElementById("productList");
         list.innerHTML="";
-        products.filter(p=>
-          p.name.toLowerCase().includes(filter.toLowerCase())||
-          (p.barcode&&p.barcode.includes(filter))
-        ).forEach(p=>{
+        products.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase())).forEach(p=>{
           const div=document.createElement("div");
           div.className="product";
+          const imgSrc=p.image||"";
           div.innerHTML=`
-            <img src="${p.image}" alt="${p.name}" onclick="openEditModal(${p.id})">
+            <img src="${imgSrc}" alt="${p.name}" onclick="openEditModal(${p.id})"/>
             <div class="product-info">
               <span class="name">${p.name}</span>
-              <span class="price">$${p.sellPrice}</span>
+              <span class="price">$${formatPrice(p.sellPrice)}</span>
+            </div>
+            <div class="product-actions">
+              <button class="action-btn sale-btn" onclick="openSaleModal(${p.id})">💰 Sale</button>
+              <button class="action-btn edit-btn" onclick="openEditModal(${p.id})">Edit</button>
             </div>`;
           list.appendChild(div);
         });
@@ -327,201 +189,124 @@
     document.getElementById("search").addEventListener("input",e=>renderProducts(e.target.value));
 
     const modal=document.getElementById("modal");
-    function openModal(){ modal.style.display="flex"; }
-    function closeModal(){ modal.style.display="none"; }
     const editModal=document.getElementById("editModal");
-    function closeEditModal(){ editModal.style.display="none"; }
+    const saleModal=document.getElementById("saleModal");
 
-    document.getElementById("image").addEventListener("change", e => {
-      const file = e.target.files[0];
-      document.getElementById("photoName").innerText = file ? file.name : "";
-    });
-    document.getElementById("editImage").addEventListener("change", e => {
-      const file = e.target.files[0];
-      document.getElementById("editPhotoName").innerText = file ? file.name : "";
-    });
+    function openModal(){ modal.style.display="flex"; }
+    function closeModal(){ modal.style.display="none"; document.getElementById("productForm").reset(); }
+    function closeEditModal(){ editModal.style.display="none"; document.getElementById("editForm").reset(); }
+    function openSaleModal(id){ document.getElementById("saleId").value=id; document.getElementById("saleQty").value=""; saleModal.style.display="flex"; }
+    function closeSaleModal(){ saleModal.style.display="none"; }
 
     document.getElementById("productForm").addEventListener("submit",e=>{
       e.preventDefault();
       const name=document.getElementById("name").value.trim();
-      const buyPrice=document.getElementById("buyPrice").value;
-      const sellPrice=document.getElementById("sellPrice").value;
-      const stock=document.getElementById("stock").value;
-      const barcode=document.getElementById("barcode").value;
+      const buyPrice=parseFloat(document.getElementById("buyPrice").value)||0;
+      const sellPrice=parseFloat(document.getElementById("sellPrice").value)||0;
+      const stock=parseInt(document.getElementById("stock").value)||0;
       const file=document.getElementById("image").files[0];
       if(!file){alert("Image required");return;}
       const reader=new FileReader();
       reader.onload=()=>{
-        const product={name,buyPrice,sellPrice,stock,barcode,image:reader.result};
+        const product={name,buyPrice,sellPrice,stock,image:reader.result};
         saveProduct(product);
-        e.target.reset(); document.getElementById("photoName").innerText="";
         closeModal();
       };
       reader.readAsDataURL(file);
+    });
+
+    document.getElementById("editForm").addEventListener("submit",e=>{
+      e.preventDefault();
+      const id=Number(document.getElementById("editId").value);
+      const name=document.getElementById("editName").value.trim();
+      const buyPrice=parseFloat(document.getElementById("editBuyPrice").value)||0;
+      const sellPrice=parseFloat(document.getElementById("editSellPrice").value)||0;
+      const stock=parseInt(document.getElementById("editStock").value)||0;
+      const file=document.getElementById("editImage").files[0];
+      const tx=db.transaction("products","readwrite");
+      const store=tx.objectStore("products");
+      const req=store.get(id);
+      req.onsuccess=()=>{
+        const p=req.result; if(!p)return;
+        p.name=name;p.buyPrice=buyPrice;p.sellPrice=sellPrice;p.stock=stock;
+        if(file){
+          const r=new FileReader();
+          r.onload=()=>{p.image=r.result;updateProduct(p);closeEditModal();};
+          r.readAsDataURL(file);
+        } else {updateProduct(p);closeEditModal();}
+      };
     });
 
     function openEditModal(id){
       const tx=db.transaction("products","readonly");
       const req=tx.objectStore("products").get(id);
       req.onsuccess=()=>{
-        const p=req.result;
-        if(!p)return;
-        document.querySelector("#editModal h3").innerText = p.name;
+        const p=req.result;if(!p)return;
         document.getElementById("editId").value=p.id;
         document.getElementById("editName").value=p.name;
-        document.getElementById("editBuyPrice").value=p.buyPrice;
-        document.getElementById("editSellPrice").value=p.sellPrice;
+        document.getElementById("editBuyPrice").value=formatPrice(p.buyPrice);
+        document.getElementById("editSellPrice").value=formatPrice(p.sellPrice);
         document.getElementById("editStock").value=p.stock;
-        document.getElementById("editBarcode").value=p.barcode||"";
-        document.getElementById("editPhotoName").innerText="";
         editModal.style.display="flex";
       };
     }
 
-    document.getElementById("editForm").addEventListener("submit",e=>{
-      e.preventDefault();
+    function deleteProductFromModal(){
       const id=Number(document.getElementById("editId").value);
-      const name=document.getElementById("editName").value;
-      const buyPrice=document.getElementById("editBuyPrice").value;
-      const sellPrice=document.getElementById("editSellPrice").value;
-      const stock=document.getElementById("editStock").value;
-      const barcode=document.getElementById("editBarcode").value;
-      const file=document.getElementById("editImage").files[0];
+      if(confirm("Delete this product?")){deleteProduct(id);closeEditModal();}
+    }
 
+    document.getElementById("saleForm").addEventListener("submit",e=>{
+      e.preventDefault();
+      const id=Number(document.getElementById("saleId").value);
+      const qty=parseInt(document.getElementById("saleQty").value);
+      if(isNaN(qty)){alert("Enter a valid quantity");return;}
+      if(!confirm("Are you sure to apply this sale/restock?"))return;
       const tx=db.transaction("products","readwrite");
       const store=tx.objectStore("products");
       const req=store.get(id);
       req.onsuccess=()=>{
-        const product=req.result;
-        product.name=name; product.buyPrice=buyPrice; product.sellPrice=sellPrice; product.stock=stock; product.barcode=barcode;
-        if(file){
-          const reader=new FileReader();
-          reader.onload=()=>{
-            product.image=reader.result;
-            const tx2=db.transaction("products","readwrite");
-            tx2.objectStore("products").put(product);
-            tx2.oncomplete=()=>{renderProducts(); closeEditModal();};
-          };
-          reader.readAsDataURL(file);
-        } else {
-          const tx2=db.transaction("products","readwrite");
-          tx2.objectStore("products").put(product);
-          tx2.oncomplete=()=>{renderProducts(); closeEditModal();};
-        }
+        const p=req.result;if(!p)return;
+        if(qty<0){p.stock+=Math.abs(qty);}else{p.stock-=qty;if(p.stock<0){alert("Insufficient stock");return;}}
+        updateProduct(p);
+        closeSaleModal();
       };
     });
 
-    function deleteProductFromModal(){
-      const id=Number(document.getElementById("editId").value);
-      deleteProduct(id); closeEditModal();
+    function exportProducts(){
+      const tx=db.transaction("products","readonly");
+      const store=tx.objectStore("products");
+      const req=store.getAll();
+      req.onsuccess=()=>{
+        const blob=new Blob([JSON.stringify(req.result,null,2)],{type:"application/json"});
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="products.json";
+        a.click();
+      };
     }
-  
 
-function exportProducts() {
-  const tx = db.transaction("products", "readonly");
-  const store = tx.objectStore("products");
-  const req = store.getAll();
-  req.onsuccess = () => {
-    const data = req.result;
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "products.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-}
-
-function importProducts(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const importedData = JSON.parse(e.target.result);
-      if (!Array.isArray(importedData)) {
-        alert("Invalid file format");
-        return;
-      }
-      const tx = db.transaction("products", "readwrite");
-      const store = tx.objectStore("products");
-      importedData.forEach(p => {
-        delete p.id; // avoid conflicts
-        store.add(p);
-      });
-      tx.oncomplete = () => renderProducts();
-      alert("Import successful!");
-    } catch (err) {
-      alert("Error importing file: " + err.message);
+    function importProducts(e){
+      const file=e.target.files[0];if(!file)return;
+      const r=new FileReader();
+      r.onload=()=>{
+        try{
+          const data=JSON.parse(r.result);
+          if(!Array.isArray(data))return alert("Invalid format");
+          const tx=db.transaction("products","readwrite");
+          const store=tx.objectStore("products");
+          data.forEach(p=>{delete p.id;store.add(p);});
+          tx.oncomplete=()=>renderProducts();
+        }catch(err){alert(err.message);}
+      };
+      r.readAsText(file);
     }
-  };
-  reader.readAsText(file);
-}
 
-function importProducts(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    JSZip.loadAsync(e.target.result).then(zip => {
-      return zip.file("products.json").async("string");
-    }).then(text => {
-      try {
-        const importedData = JSON.parse(text);
-        if (!Array.isArray(importedData)) {
-          alert("Invalid file format");
-          return;
-        }
-        const tx = db.transaction("products", "readwrite");
-        const store = tx.objectStore("products");
-        importedData.forEach(p => {
-          delete p.id; // avoid conflicts
-          store.add(p);
-        });
-        tx.oncomplete = () => renderProducts();
-        alert("Import successful!");
-      } catch (err) {
-        alert("Error importing file: " + err.message);
-      }
-    });
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-
-
-// Sidebar toggle
-const sidebar = document.getElementById("sidebar");
-const hamburger = document.querySelector(".hamburger");
-
-// Toggle sidebar when clicking hamburger
-hamburger.addEventListener("click", (e) => {
-  e.stopPropagation();
-  sidebar.classList.toggle("active");
-});
-
-// Close sidebar when clicking outside
-window.addEventListener("click", (e) => {
-  if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
-    sidebar.classList.remove("active");
-  }
-});
-
-
-
-// Close modals when clicking outside content
-window.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    closeModal();
-  }
-  if (e.target === editModal) {
-    closeEditModal();
-  }
-});
-
-</script>
+    const sidebar=document.getElementById("sidebar");
+    const hamburger=document.querySelector(".hamburger");
+    hamburger.addEventListener("click",e=>{e.stopPropagation();sidebar.classList.toggle("active");});
+    window.addEventListener("click",e=>{if(!sidebar.contains(e.target)&&!hamburger.contains(e.target))sidebar.classList.remove("active");});
+    document.getElementById("addBtn").addEventListener("click",()=>openModal());
+  </script>
 </body>
 </html>
