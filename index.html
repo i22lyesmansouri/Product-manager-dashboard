@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Product Manager Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffcc00">
   <style>
     html, body { margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; min-height:100%; }
     header { background:#fff; padding:.5rem 1rem; display:flex; justify-content:space-between; align-items:center;
@@ -22,7 +24,33 @@
     .product { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.08); text-align:center; }
     .product img { width:100%; height:140px; object-fit:cover; cursor:pointer; display:block; }
     .product-info { display:flex; justify-content:space-between; align-items:center; padding:.5rem .7rem; font-size:14px; }
-    .product-info .name { color:#111; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+    .product-info .name {
+  flex: 2;
+  color: #111;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  margin-right: 6px;
+}
+.product-info .price {
+  flex: 1;
+  text-align: right;
+  font-weight: 700;
+  position: relative;
+}
+.product-info .price::before {
+  content: 'د';
+  position: absolute;
+  top: -0.4rem;
+  left: -0.4rem;
+  font-size: 0.6em;
+}
+.modal form input[type="text"], 
+.modal form input[type="number"] {
+  box-shadow: 0 0 5px rgba(0,0,0,0.15);
+}
     .product-info .price { color:#111; font-weight:700; }
 
     .product-actions { display:flex; gap:.4rem; justify-content:center; padding-bottom:.6rem; }
@@ -81,6 +109,7 @@
         <input type="text" id="name" placeholder="Product Name" required />
         <input type="number" id="buyPrice" placeholder="Buy Price" step="0.01" min="0" required />
         <input type="number" id="sellPrice" placeholder="Sell Price" step="0.01" min="0" required />
+<input type="number" id="bulkPrice" placeholder="Bulk Price (for multiple items)" step="0.01" min="0" />
         <input type="number" id="stock" placeholder="Stock Quantity" step="1" min="0" required />
         <input type="file" id="image" accept="image/*" style="display:none" />
         <label for="image" class="file-btn">📷 Add Photo</label>
@@ -120,8 +149,8 @@
       <form id="saleForm">
         <input type="hidden" id="saleId" />
         <div>
-          <label>Quantity (positive = sold, negative = returned/restocked)</label>
           <input type="number" id="saleQty" step="1" required />
+<p id="totalPrice" style="margin:.4rem 0;font-weight:bold;"></p>
         </div>
         <div style="display:flex; gap:.5rem; margin-top:.5rem;">
           <button type="submit" class="action-btn sale-btn">Confirm</button>
@@ -159,7 +188,13 @@
       tx.oncomplete=()=>renderProducts();
     }
 
-    function renderProducts(filter=""){
+    
+function getUnitPrice(product, qty){
+  if(qty > 1 && product.bulkPrice){ return product.bulkPrice; }
+  return product.sellPrice;
+}
+
+function renderProducts(filter=""){
       const tx=db.transaction("products","readonly");
       const store=tx.objectStore("products");
       const req=store.getAll();
@@ -204,11 +239,12 @@
       const buyPrice=parseFloat(document.getElementById("buyPrice").value)||0;
       const sellPrice=parseFloat(document.getElementById("sellPrice").value)||0;
       const stock=parseInt(document.getElementById("stock").value)||0;
+      const bulkPrice=parseFloat(document.getElementById("bulkPrice").value)||null;
       const file=document.getElementById("image").files[0];
       if(!file){alert("Image required");return;}
       const reader=new FileReader();
       reader.onload=()=>{
-        const product={name,buyPrice,sellPrice,stock,image:reader.result};
+        const product={name,buyPrice,sellPrice,bulkPrice,stock,image:reader.result};
         saveProduct(product);
         closeModal();
       };
@@ -256,7 +292,21 @@
       if(confirm("Delete this product?")){deleteProduct(id);closeEditModal();}
     }
 
-    document.getElementById("saleForm").addEventListener("submit",e=>{
+    
+document.getElementById("saleQty").addEventListener("input",()=>{
+  const qty=parseInt(saleQty.value);
+  const id=Number(document.getElementById("saleId").value);
+  if(!qty||qty<=0)return;
+  const tx=db.transaction("products","readonly");
+  tx.objectStore("products").get(id).onsuccess=e=>{
+    const p=e.target.result;
+    const unit=getUnitPrice(p,qty);
+    document.getElementById("totalPrice").innerText="Total: $"+(unit*qty).toFixed(2);
+  };
+});
+
+
+document.getElementById("saleForm").addEventListener("submit",e=>{
       e.preventDefault();
       const id=Number(document.getElementById("saleId").value);
       const qty=parseInt(document.getElementById("saleQty").value);
@@ -307,6 +357,9 @@
     hamburger.addEventListener("click",e=>{e.stopPropagation();sidebar.classList.toggle("active");});
     window.addEventListener("click",e=>{if(!sidebar.contains(e.target)&&!hamburger.contains(e.target))sidebar.classList.remove("active");});
     document.getElementById("addBtn").addEventListener("click",()=>openModal());
-  </script>
+  if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
 </body>
 </html>
