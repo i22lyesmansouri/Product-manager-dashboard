@@ -17,7 +17,12 @@
     @media (max-width:600px) { .search-wrapper input { width:120px; } }
 
     main { padding:1rem; min-height: calc(100vh - 120px); }
-    #productList { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:.6rem; }
+    #productList { display:grid; grid-template-columns:repeat(3, 1fr); gap:.6rem; }
+    @media (max-width:600px){
+      #productList{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
 
     .product { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.08); text-align:center; }
     .product img { width:100%; height:140px; object-fit:cover; cursor:pointer; display:block; }
@@ -38,7 +43,7 @@
   font-weight: 700;
   position: relative;
 }
-.product-info .price::before {
+/* removed currency symbol */ .removed {
   content: 'د';
   position: absolute;
   top: -0.4rem;
@@ -121,7 +126,19 @@
 
   <div id="editModal" class="modal">
     <div class="content">
-      <h3>Edit Product</h3>
+      <h3 id="detailTitle"></h3>
+<img id="detailImage"
+     style="width:100%;height:200px;object-fit:cover;border-radius:10px;margin-bottom:10px;">
+<div style="margin-bottom:10px;">
+  <div><strong>Buy Price:</strong> <span id="detailBuy"></span></div>
+  <div><strong>Sell Price:</strong> <span id="detailSell"></span></div>
+  <div><strong>Stock:</strong> <span id="detailStock"></span></div>
+</div>
+<div style="display:flex;gap:.5rem;">
+  <button type="button" class="action-btn edit-btn" onclick="enableEditMode()">Update</button>
+  <button type="button" class="action-btn" style="background:#dc3545;color:#fff;" onclick="deleteProductFromModal()">Delete</button>
+  <button type="button" class="action-btn" style="background:#ccc;" onclick="closeEditModal()">Close</button>
+</div>
       <form id="editForm">
         <input type="hidden" id="editId" />
         <input type="text" id="editName" required />
@@ -166,7 +183,13 @@
     };
     request.onsuccess = e => { db = e.target.result; renderProducts(); };
 
-    function formatPrice(v){ return Number.parseFloat(v).toFixed(2); }
+    function formatSmartPrice(value){
+      const num = parseFloat(value);
+      if(Number.isInteger(num)){
+        return num;
+      }
+      return num.toFixed(2).replace(/\.00$/, '');
+    }
 
     function saveProduct(product){
       const tx=db.transaction("products","readwrite");
@@ -197,14 +220,9 @@
           div.className="product";
           const imgSrc=p.image||"";
           div.innerHTML=`
-            <img src="${imgSrc}" alt="${p.name}" onclick="openEditModal(${p.id})"/>
-            <div class="product-info">
-              <span class="name">${p.name}</span>
-              <span class="price">$${formatPrice(p.sellPrice)}</span>
-            </div>
-            <div class="product-actions">
-              <button class="action-btn sale-btn" onclick="openSaleModal(${p.id})">💰 Sale</button>
-              <button class="action-btn edit-btn" onclick="openEditModal(${p.id})">Edit</button>
+            <img src="${imgSrc}" alt="${p.name}" onclick="openProductDetails(${p.id})"/>
+            <div class="product-info" style="justify-content:center;">
+              <span class="price">${formatSmartPrice(p.sellPrice)}</span>
             </div>`;
           list.appendChild(div);
         });
@@ -262,7 +280,7 @@
       };
     });
 
-    function openEditModal(id){
+    function openProductDetails(id){
       const tx=db.transaction("products","readonly");
       const req=tx.objectStore("products").get(id);
       req.onsuccess=()=>{
@@ -272,6 +290,11 @@
         document.getElementById("editBuyPrice").value=formatPrice(p.buyPrice);
         document.getElementById("editSellPrice").value=formatPrice(p.sellPrice);
         document.getElementById("editStock").value=p.stock;
+        document.getElementById("detailTitle").innerText = p.name;
+        document.getElementById("detailImage").src = p.image || "";
+        document.getElementById("detailBuy").innerText = formatSmartPrice(p.buyPrice);
+        document.getElementById("detailSell").innerText = formatSmartPrice(p.sellPrice);
+        document.getElementById("detailStock").innerText = p.stock;
         editModal.style.display="flex";
       };
     }
