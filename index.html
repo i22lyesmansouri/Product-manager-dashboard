@@ -1,90 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Electro Jazera</title>
 
 <style>
 html,body{margin:0;font-family:Arial,sans-serif;background:#fff;color:#111}
 header{background:#fff;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);position:sticky;top:0;z-index:10}
 .logo{height:40px}
+.search{padding:.4rem .6rem;border:1px solid #ccc;border-radius:6px;width:160px}
+
 main{padding:1rem}
 
-#productList{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:.7rem;
-}
+#productList{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
 
-@media(max-width:600px){
-#productList{grid-template-columns:repeat(2,1fr);}
-}
 
-.product{
-background:#fff;
-border-radius:12px;
-overflow:hidden;
-box-shadow:0 2px 6px rgba(0,0,0,0.08);
-cursor:pointer;
-transition:.2s;
-}
-
-.product:hover{
-transform:translateY(-3px);
-box-shadow:0 6px 14px rgba(0,0,0,0.15);
-}
-
-.product img{
-width:100%;
-height:150px;
-object-fit:cover;
-display:block;
-}
-
-.product-info{
-display:flex;
-justify-content:space-between;
-padding:.6rem .7rem;
-font-weight:600;
-}
-
+.product{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08);cursor:pointer;transition:.2s}
+.product:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,0.15)}
+.product img{width:100%;height:150px;object-fit:cover;display:block}
+.product-info{display:flex;justify-content:space-between;padding:.6rem .7rem;font-weight:600}
 .price{font-weight:700}
 
-.modal{
-display:none;
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.6);
-align-items:center;
-justify-content:center;
-z-index:50;
-}
+#addBtn{position:fixed;bottom:20px;right:20px;background:#ffcc00;border:none;width:55px;height:55px;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.2)}
 
-.modal-content{
-background:#fff;
-padding:1rem;
-border-radius:12px;
-width:100%;
-max-width:420px;
-}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:50}
+.modal-content{background:#fff;padding:1rem;border-radius:12px;width:100%;max-width:420px}
+.modal-content img{width:100%;height:220px;object-fit:cover;border-radius:10px;margin-bottom:10px}
+input{width:100%;padding:.45rem;margin:.4rem 0;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
 
-.modal-content img{
-width:100%;
-height:220px;
-object-fit:cover;
-border-radius:10px;
-margin-bottom:10px;
-}
-
-button{
-padding:.5rem .8rem;
-border:none;
-border-radius:8px;
-cursor:pointer;
-}
-
+button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 .update-btn{background:#007bff;color:#fff}
+.save-btn{background:#28a745;color:#fff}
 .close-btn{background:#ccc}
 </style>
 </head>
@@ -92,52 +39,64 @@ cursor:pointer;
 
 <header>
 <img src="icon-192.png" class="logo">
+<input type="text" id="searchInput" class="search" placeholder="Search...">
 </header>
 
 <main>
 <div id="productList"></div>
 </main>
 
-<div id="detailsModal" class="modal">
+<button id="addBtn">+</button>
+
+<div id="modal" class="modal">
 <div class="modal-content">
-<h3 id="dName"></h3>
-<img id="dImage">
-<div><strong>Buy:</strong> <span id="dBuy"></span></div>
-<div><strong>Sell:</strong> <span id="dSell"></span></div>
-<div><strong>Stock:</strong> <span id="dStock"></span></div>
-<br>
-<div style="display:flex;gap:.5rem;">
-<button class="update-btn" onclick="closeDetails()">Close</button>
+<h3 id="modalTitle"></h3>
+<img id="previewImg" style="display:none;">
+<input type="hidden" id="editId">
+
+<input type="text" id="name" placeholder="Product Name">
+<input type="text" id="description" placeholder="Description">
+<input type="number" id="buyPrice" placeholder="Buy Price">
+<input type="number" id="sellPrice" placeholder="Sell Price">
+<input type="number" id="stock" placeholder="Stock">
+<input type="file" id="image">
+
+<div style="display:flex;gap:.5rem;margin-top:.6rem;">
+<button id="saveBtn" class="save-btn">Save</button>
+<button class="close-btn" onclick="closeModal()">Close</button>
 </div>
 </div>
 </div>
 
 <script>
 let db;
-const request=indexedDB.open("ProductManagerDB",1);
+const request=indexedDB.open("ProductManagerDB",2);
 
 request.onupgradeneeded=e=>{
 db=e.target.result;
-const store=db.createObjectStore("products",{keyPath:"id",autoIncrement:true});
+if(!db.objectStoreNames.contains("products")){
+db.createObjectStore("products",{keyPath:"id",autoIncrement:true});
+}
 };
 
 request.onsuccess=e=>{db=e.target.result;renderProducts();};
 
 function formatSmartPrice(v){
-const n=parseFloat(v);
+const n=parseFloat(v||0);
 if(Number.isInteger(n)) return n;
 return n.toFixed(2).replace(/\.00$/,'');
 }
 
-function renderProducts(){
+function renderProducts(filter=""){
 const tx=db.transaction("products","readonly");
 const store=tx.objectStore("products");
 const req=store.getAll();
-
 req.onsuccess=()=>{
 const list=document.getElementById("productList");
 list.innerHTML="";
-(req.result||[]).forEach(p=>{
+(req.result||[])
+.filter(p=>(p.name||"").toLowerCase().includes(filter) || (p.description||"").toLowerCase().includes(filter))
+.forEach(p=>{
 
 const card=document.createElement("div");
 card.className="product";
@@ -149,14 +108,12 @@ card.innerHTML=`
 <span class="price">${formatSmartPrice(p.sellPrice)}</span>
 </div>`;
 
-card.onclick=()=>openDetails(p);
+card.onclick=()=>openEdit(p);
 
 let timer;
 card.onmousedown=()=>{
 timer=setTimeout(()=>{
-if(confirm("Delete this product?")){
-deleteProduct(p.id);
-}
+if(confirm("Delete this product?")) deleteProduct(p.id);
 },800);
 };
 card.onmouseup=()=>clearTimeout(timer);
@@ -170,24 +127,84 @@ list.appendChild(card);
 function deleteProduct(id){
 const tx=db.transaction("products","readwrite");
 tx.objectStore("products").delete(id);
-tx.oncomplete=()=>renderProducts();
+tx.oncomplete=()=>renderProducts(document.getElementById("searchInput").value.toLowerCase());
 }
 
-function openDetails(p){
-document.getElementById("dName").innerText=p.name;
-document.getElementById("dImage").src=p.image||'';
-document.getElementById("dBuy").innerText=formatSmartPrice(p.buyPrice);
-document.getElementById("dSell").innerText=formatSmartPrice(p.sellPrice);
-document.getElementById("dStock").innerText=p.stock;
-document.getElementById("detailsModal").style.display="flex";
+function openEdit(p){
+document.getElementById("modalTitle").innerText="Product Details";
+document.getElementById("editId").value=p.id||"";
+document.getElementById("name").value=p.name||"";
+document.getElementById("description").value=p.description||"";
+document.getElementById("buyPrice").value=p.buyPrice||"";
+document.getElementById("sellPrice").value=p.sellPrice||"";
+document.getElementById("stock").value=p.stock||"";
+if(p.image){
+document.getElementById("previewImg").src=p.image;
+document.getElementById("previewImg").style.display="block";
+}else{
+document.getElementById("previewImg").style.display="none";
+}
+document.getElementById("modal").style.display="flex";
 }
 
-function closeDetails(){
-document.getElementById("detailsModal").style.display="none";
+function closeModal(){
+document.getElementById("modal").style.display="none";
+document.getElementById("editId").value="";
 }
+
+document.getElementById("addBtn").onclick=()=>{
+document.getElementById("modalTitle").innerText="Add Product";
+document.getElementById("editId").value="";
+document.querySelectorAll("#modal input").forEach(i=>{if(i.type!=="hidden")i.value=""});
+document.getElementById("previewImg").style.display="none";
+document.getElementById("modal").style.display="flex";
+};
+
+document.getElementById("saveBtn").onclick=()=>{
+const id=document.getElementById("editId").value;
+const product={
+name:document.getElementById("name").value,
+description:document.getElementById("description").value,
+buyPrice:parseFloat(document.getElementById("buyPrice").value)||0,
+sellPrice:parseFloat(document.getElementById("sellPrice").value)||0,
+stock:parseInt(document.getElementById("stock").value)||0
+};
+
+const file=document.getElementById("image").files[0];
+
+if(file){
+const reader=new FileReader();
+reader.onload=()=>{
+product.image=reader.result;
+saveToDB(id,product);
+};
+reader.readAsDataURL(file);
+}else{
+saveToDB(id,product);
+}
+};
+
+function saveToDB(id,product){
+const tx=db.transaction("products","readwrite");
+const store=tx.objectStore("products");
+if(id){
+product.id=parseInt(id);
+store.put(product);
+}else{
+store.add(product);
+}
+tx.oncomplete=()=>{
+closeModal();
+renderProducts(document.getElementById("searchInput").value.toLowerCase());
+};
+}
+
+document.getElementById("searchInput").addEventListener("input",e=>{
+renderProducts(e.target.value.toLowerCase());
+});
 
 window.onclick=e=>{
-if(e.target.id==="detailsModal") closeDetails();
+if(e.target.id==="modal") closeModal();
 };
 </script>
 
