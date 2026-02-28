@@ -1,360 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Product Manager Dashboard</title>
-  <style>
-    html, body { margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; min-height:100%; }
-    header { background:#fff; padding:.5rem 1rem; display:flex; justify-content:space-between; align-items:center;
-             box-shadow:0 2px 6px rgba(0,0,0,0.1); position:sticky; top:0; z-index:200; }
-    .left { display:flex; align-items:center; gap:1rem; }
-    .logo { height:40px; width:auto; object-fit:contain; display:block; margin-left:10px; }
-    .hamburger { font-size:20px; cursor:pointer; color:#ffcc00; }
-    .search-wrapper { position:relative; }
-    .search-icon { position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px; color:#aaa; }
-    .search-wrapper input { padding:.3rem .3rem .3rem 24px; border:1px solid #ccc; border-radius:4px; width:180px; }
-    @media (max-width:600px) { .search-wrapper input { width:120px; } }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Electro Jazera</title>
 
-    main { padding:1rem; min-height: calc(100vh - 120px); }
-    #productList { display:grid; grid-template-columns:repeat(3, 1fr); gap:.6rem; }
-    @media (max-width:600px){
-      #productList{
-        grid-template-columns:repeat(2,1fr);
-      }
-    }
+<style>
+html,body{margin:0;font-family:Arial,sans-serif;background:#fff;color:#111}
+header{background:#fff;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);position:sticky;top:0;z-index:10}
+.logo{height:40px}
+main{padding:1rem}
 
-    .product { background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.08); text-align:center; }
-    .product img { width:100%; height:140px; object-fit:cover; cursor:pointer; display:block; }
-    .product-info { display:flex; justify-content:space-between; align-items:center; padding:.5rem .7rem; font-size:14px; }
-    .product-info .name {
-  flex: 2;
-  color: #111;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: inline-block;
-  margin-right: 6px;
+#productList{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:.7rem;
 }
-.product-info .price {
-  flex: 1;
-  text-align: right;
-  font-weight: 700;
-  position: relative;
+
+@media(max-width:600px){
+#productList{grid-template-columns:repeat(2,1fr);}
 }
-/* removed currency symbol */ .removed {
-  content: 'د';
-  position: absolute;
-  top: -0.4rem;
-  left: -0.4rem;
-  font-size: 0.6em;
+
+.product{
+background:#fff;
+border-radius:12px;
+overflow:hidden;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
+cursor:pointer;
+transition:.2s;
 }
-.modal form input[type="text"], 
-.modal form input[type="number"] {
-  box-shadow: 0 0 5px rgba(0,0,0,0.15);
+
+.product:hover{
+transform:translateY(-3px);
+box-shadow:0 6px 14px rgba(0,0,0,0.15);
 }
-    .product-info .price { color:#111; font-weight:700; }
 
-    .product-actions { display:flex; gap:.4rem; justify-content:center; padding-bottom:.6rem; }
-    .action-btn { padding:.35rem .6rem; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
-    .add-btn { background:#ffcc00; color:#111; }
-    .edit-btn { background:#007bff; color:#fff; }
-    .sale-btn { background:#28a745; color:#fff; }
+.product img{
+width:100%;
+height:150px;
+object-fit:cover;
+display:block;
+}
 
-    #addBtn { position:fixed; bottom:20px; right:20px; background:#ffcc00; color:#111; border:none; border-radius:50%; width:54px; height:54px; font-size:1.6rem; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:250; }
+.product-info{
+display:flex;
+justify-content:space-between;
+padding:.6rem .7rem;
+font-weight:600;
+}
 
-    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:400; align-items:center; justify-content:center; }
-    .modal .content { background:#fff; padding:1rem; border-radius:12px; width:100%; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2); }
-    .modal h3 { margin:0 0 .5rem 0; }
-    .modal form input[type="text"], .modal form input[type="number"] { width:100%; padding:.45rem; margin:.35rem 0; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; }
-    label.file-btn { display:block; background:#ffcc00; color:#111; padding:.5rem; border-radius:6px; cursor:pointer; text-align:center; margin:.4rem 0; }
-    .small { font-size:13px; color:#555; }
+.price{font-weight:700}
 
-    #sidebar { position: fixed; top: 0; left: -220px; width: 200px; height: 100%; background: #fff; box-shadow: 2px 0 6px rgba(0,0,0,0.1); padding: 1rem; transition: left 0.25s ease; z-index:300; display:flex; flex-direction:column; gap:8px; }
-    #sidebar.active { left:0; }
-    #sidebar button, #sidebar label { background: #ffcc00; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; color: #111; text-align: center; }
+.modal{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.6);
+align-items:center;
+justify-content:center;
+z-index:50;
+}
 
-    .footer-note { text-align:center; color:#666; font-size:13px; margin-top:12px; }
-  </style>
+.modal-content{
+background:#fff;
+padding:1rem;
+border-radius:12px;
+width:100%;
+max-width:420px;
+}
+
+.modal-content img{
+width:100%;
+height:220px;
+object-fit:cover;
+border-radius:10px;
+margin-bottom:10px;
+}
+
+button{
+padding:.5rem .8rem;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+
+.update-btn{background:#007bff;color:#fff}
+.close-btn{background:#ccc}
+</style>
 </head>
 <body>
-  <header>
-    <div class="left">
-      <span class="hamburger">☰</span>
-      <img src="icon-192.png" alt="Logo" class="logo">
-    </div>
-    <div class="search-wrapper">
-      <span class="search-icon">🔍</span>
-      <input id="search" placeholder="Search..." />
-    </div>
-  </header>
 
-  <div id="sidebar">
-    <button onclick="exportProducts()">Export Products</button>
-    <label style="cursor:pointer;">
-      Import Products
-      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importProducts(event)">
-    </label>
-    <div class="footer-note">Offline & IndexedDB</div>
-  </div>
+<header>
+<img src="icon-192.png" class="logo">
+</header>
 
-  <main>
-    <div id="productList"></div>
-  </main>
+<main>
+<div id="productList"></div>
+</main>
 
-  <button id="addBtn" title="Add product">＋</button>
-
-  <div id="modal" class="modal">
-    <div class="content">
-      <h3>Add Product</h3>
-      <form id="productForm">
-        <input type="text" id="name" placeholder="Product Name" required />
-        <input type="number" id="buyPrice" placeholder="Buy Price" step="0.01" min="0" required />
-        <input type="number" id="sellPrice" placeholder="Sell Price" step="0.01" min="0" required />
-        <input type="number" id="stock" placeholder="Stock Quantity" step="1" min="0" required />
-        <input type="file" id="image" accept="image/*" style="display:none" />
-        <label for="image" class="file-btn">📷 Add Photo</label>
-        <span id="photoName" class="small"></span>
-        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-          <button type="submit" class="action-btn add-btn">Add</button>
-          <button type="button" class="action-btn" style="background:#dc3545;color:#fff;" onclick="closeModal()">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="editModal" class="modal">
-    <div class="content">
-      <h3 id="detailTitle"></h3>
-<img id="detailImage"
-     style="width:100%;height:200px;object-fit:cover;border-radius:10px;margin-bottom:10px;">
-<div style="margin-bottom:10px;">
-  <div><strong>Buy Price:</strong> <span id="detailBuy"></span></div>
-  <div><strong>Sell Price:</strong> <span id="detailSell"></span></div>
-  <div><strong>Stock:</strong> <span id="detailStock"></span></div>
-</div>
+<div id="detailsModal" class="modal">
+<div class="modal-content">
+<h3 id="dName"></h3>
+<img id="dImage">
+<div><strong>Buy:</strong> <span id="dBuy"></span></div>
+<div><strong>Sell:</strong> <span id="dSell"></span></div>
+<div><strong>Stock:</strong> <span id="dStock"></span></div>
+<br>
 <div style="display:flex;gap:.5rem;">
-  <button type="button" class="action-btn edit-btn" onclick="enableEditMode()">Update</button>
-  <button type="button" class="action-btn" style="background:#dc3545;color:#fff;" onclick="deleteProductFromModal()">Delete</button>
-  <button type="button" class="action-btn" style="background:#ccc;" onclick="closeEditModal()">Close</button>
+<button class="update-btn" onclick="closeDetails()">Close</button>
 </div>
-      <form id="editForm">
-        <input type="hidden" id="editId" />
-        <input type="text" id="editName" required />
-        <input type="number" id="editBuyPrice" step="0.01" min="0" required />
-        <input type="number" id="editSellPrice" step="0.01" min="0" required />
-        <input type="number" id="editStock" step="1" min="0" required />
-        <input type="file" id="editImage" accept="image/*" style="display:none" />
-        <label for="editImage" class="file-btn">📷 Change Photo</label>
-        <span id="editPhotoName" class="small"></span>
-        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-          <button type="submit" class="action-btn edit-btn">Update</button>
-          <button type="button" class="action-btn" style="background:#555;color:#fff;" onclick="deleteProductFromModal()">Delete</button>
-          <button type="button" class="action-btn" style="background:#ccc;" onclick="closeEditModal()">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
+</div>
+</div>
 
-  <div id="saleModal" class="modal">
-    <div class="content">
-      <h3>Sale / Restock</h3>
-      <form id="saleForm">
-        <input type="hidden" id="saleId" />
-        <div>
-          <input type="number" id="saleQty" step="1" required />
-        </div>
-        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-          <button type="submit" class="action-btn sale-btn">Confirm</button>
-          <button type="button" class="action-btn" style="background:#ccc;" onclick="closeSaleModal()">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<script>
+let db;
+const request=indexedDB.open("ProductManagerDB",1);
 
-  <script>
-    let db;
-    const request = indexedDB.open("ProductManagerDB", 1);
-    request.onupgradeneeded = e => {
-      db = e.target.result;
-      const store = db.createObjectStore("products", { keyPath:"id", autoIncrement:true });
-      store.createIndex("name","name",{unique:false});
-    };
-    request.onsuccess = e => { db = e.target.result; renderProducts(); };
+request.onupgradeneeded=e=>{
+db=e.target.result;
+const store=db.createObjectStore("products",{keyPath:"id",autoIncrement:true});
+};
 
-    function formatSmartPrice(value){
-      const num = parseFloat(value);
-      if(Number.isInteger(num)){
-        return num;
-      }
-      return num.toFixed(2).replace(/\.00$/, '');
-    }
+request.onsuccess=e=>{db=e.target.result;renderProducts();};
 
-    function saveProduct(product){
-      const tx=db.transaction("products","readwrite");
-      tx.objectStore("products").add(product);
-      tx.oncomplete=()=>renderProducts();
-    }
-    function updateProduct(product){
-      const tx=db.transaction("products","readwrite");
-      tx.objectStore("products").put(product);
-      tx.oncomplete=()=>renderProducts();
-    }
-    function deleteProduct(id){
-      const tx=db.transaction("products","readwrite");
-      tx.objectStore("products").delete(id);
-      tx.oncomplete=()=>renderProducts();
-    }
+function formatSmartPrice(v){
+const n=parseFloat(v);
+if(Number.isInteger(n)) return n;
+return n.toFixed(2).replace(/\.00$/,'');
+}
 
-    function renderProducts(filter=""){
-      const tx=db.transaction("products","readonly");
-      const store=tx.objectStore("products");
-      const req=store.getAll();
-      req.onsuccess=()=>{
-        const products=req.result || [];
-        const list=document.getElementById("productList");
-        list.innerHTML="";
-        products.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase())).forEach(p=>{
-          const div=document.createElement("div");
-          div.className="product";
-          const imgSrc=p.image||"";
-          div.innerHTML=`
-            <img src="${imgSrc}" alt="${p.name}" onclick="openProductDetails(${p.id})"/>
-            <div class="product-info" style="justify-content:center;">
-              <span class="price">${formatSmartPrice(p.sellPrice)}</span>
-            </div>`;
-          list.appendChild(div);
-        });
-      };
-    }
+function renderProducts(){
+const tx=db.transaction("products","readonly");
+const store=tx.objectStore("products");
+const req=store.getAll();
 
-    document.getElementById("search").addEventListener("input",e=>renderProducts(e.target.value));
+req.onsuccess=()=>{
+const list=document.getElementById("productList");
+list.innerHTML="";
+(req.result||[]).forEach(p=>{
 
-    const modal=document.getElementById("modal");
-    const editModal=document.getElementById("editModal");
-    const saleModal=document.getElementById("saleModal");
+const card=document.createElement("div");
+card.className="product";
 
-    function openModal(){ modal.style.display="flex"; }
-    function closeModal(){ modal.style.display="none"; document.getElementById("productForm").reset(); }
-    function closeEditModal(){ editModal.style.display="none"; document.getElementById("editForm").reset(); }
-    function openSaleModal(id){ document.getElementById("saleId").value=id; document.getElementById("saleQty").value=""; saleModal.style.display="flex"; }
-    function closeSaleModal(){ saleModal.style.display="none"; }
+card.innerHTML=`
+<img src="${p.image||''}">
+<div class="product-info">
+<span>${p.name}</span>
+<span class="price">${formatSmartPrice(p.sellPrice)}</span>
+</div>`;
 
-    document.getElementById("productForm").addEventListener("submit",e=>{
-      e.preventDefault();
-      const name=document.getElementById("name").value.trim();
-      const buyPrice=parseFloat(document.getElementById("buyPrice").value)||0;
-      const sellPrice=parseFloat(document.getElementById("sellPrice").value)||0;
-      const stock=parseInt(document.getElementById("stock").value)||0;
-      const file=document.getElementById("image").files[0];
-      if(!file){alert("Image required");return;}
-      const reader=new FileReader();
-      reader.onload=()=>{
-        const product={name,buyPrice,sellPrice,stock,image:reader.result};
-        saveProduct(product);
-        closeModal();
-      };
-      reader.readAsDataURL(file);
-    });
+card.onclick=()=>openDetails(p);
 
-    document.getElementById("editForm").addEventListener("submit",e=>{
-      e.preventDefault();
-      const id=Number(document.getElementById("editId").value);
-      const name=document.getElementById("editName").value.trim();
-      const buyPrice=parseFloat(document.getElementById("editBuyPrice").value)||0;
-      const sellPrice=parseFloat(document.getElementById("editSellPrice").value)||0;
-      const stock=parseInt(document.getElementById("editStock").value)||0;
-      const file=document.getElementById("editImage").files[0];
-      const tx=db.transaction("products","readwrite");
-      const store=tx.objectStore("products");
-      const req=store.get(id);
-      req.onsuccess=()=>{
-        const p=req.result; if(!p)return;
-        p.name=name;p.buyPrice=buyPrice;p.sellPrice=sellPrice;p.stock=stock;
-        if(file){
-          const r=new FileReader();
-          r.onload=()=>{p.image=r.result;updateProduct(p);closeEditModal();};
-          r.readAsDataURL(file);
-        } else {updateProduct(p);closeEditModal();}
-      };
-    });
+let timer;
+card.onmousedown=()=>{
+timer=setTimeout(()=>{
+if(confirm("Delete this product?")){
+deleteProduct(p.id);
+}
+},800);
+};
+card.onmouseup=()=>clearTimeout(timer);
+card.onmouseleave=()=>clearTimeout(timer);
 
-    function openProductDetails(id){
-      const tx=db.transaction("products","readonly");
-      const req=tx.objectStore("products").get(id);
-      req.onsuccess=()=>{
-        const p=req.result;if(!p)return;
-        document.getElementById("editId").value=p.id;
-        document.getElementById("editName").value=p.name;
-        document.getElementById("editBuyPrice").value=formatPrice(p.buyPrice);
-        document.getElementById("editSellPrice").value=formatPrice(p.sellPrice);
-        document.getElementById("editStock").value=p.stock;
-        document.getElementById("detailTitle").innerText = p.name;
-        document.getElementById("detailImage").src = p.image || "";
-        document.getElementById("detailBuy").innerText = formatSmartPrice(p.buyPrice);
-        document.getElementById("detailSell").innerText = formatSmartPrice(p.sellPrice);
-        document.getElementById("detailStock").innerText = p.stock;
-        editModal.style.display="flex";
-      };
-    }
+list.appendChild(card);
+});
+};
+}
 
-    function deleteProductFromModal(){
-      const id=Number(document.getElementById("editId").value);
-      if(confirm("Delete this product?")){deleteProduct(id);closeEditModal();}
-    }
+function deleteProduct(id){
+const tx=db.transaction("products","readwrite");
+tx.objectStore("products").delete(id);
+tx.oncomplete=()=>renderProducts();
+}
 
-    document.getElementById("saleForm").addEventListener("submit",e=>{
-      e.preventDefault();
-      const id=Number(document.getElementById("saleId").value);
-      const qty=parseInt(document.getElementById("saleQty").value);
-      if(isNaN(qty)){alert("Enter a valid quantity");return;}
-      if(!confirm("Are you sure to apply this sale/restock?"))return;
-      const tx=db.transaction("products","readwrite");
-      const store=tx.objectStore("products");
-      const req=store.get(id);
-      req.onsuccess=()=>{
-        const p=req.result;if(!p)return;
-        if(qty<0){p.stock+=Math.abs(qty);}else{p.stock-=qty;if(p.stock<0){alert("Insufficient stock");return;}}
-        updateProduct(p);
-        closeSaleModal();
-      };
-    });
+function openDetails(p){
+document.getElementById("dName").innerText=p.name;
+document.getElementById("dImage").src=p.image||'';
+document.getElementById("dBuy").innerText=formatSmartPrice(p.buyPrice);
+document.getElementById("dSell").innerText=formatSmartPrice(p.sellPrice);
+document.getElementById("dStock").innerText=p.stock;
+document.getElementById("detailsModal").style.display="flex";
+}
 
-    function exportProducts(){
-      const tx=db.transaction("products","readonly");
-      const store=tx.objectStore("products");
-      const req=store.getAll();
-      req.onsuccess=()=>{
-        const blob=new Blob([JSON.stringify(req.result,null,2)],{type:"application/json"});
-        const a=document.createElement("a");
-        a.href=URL.createObjectURL(blob);
-        a.download="products.json";
-        a.click();
-      };
-    }
+function closeDetails(){
+document.getElementById("detailsModal").style.display="none";
+}
 
-    function importProducts(e){
-      const file=e.target.files[0];if(!file)return;
-      const r=new FileReader();
-      r.onload=()=>{
-        try{
-          const data=JSON.parse(r.result);
-          if(!Array.isArray(data))return alert("Invalid format");
-          const tx=db.transaction("products","readwrite");
-          const store=tx.objectStore("products");
-          data.forEach(p=>{delete p.id;store.add(p);});
-          tx.oncomplete=()=>renderProducts();
-        }catch(err){alert(err.message);}
-      };
-      r.readAsText(file);
-    }
+window.onclick=e=>{
+if(e.target.id==="detailsModal") closeDetails();
+};
+</script>
 
-    const sidebar=document.getElementById("sidebar");
-    const hamburger=document.querySelector(".hamburger");
-    hamburger.addEventListener("click",e=>{e.stopPropagation();sidebar.classList.toggle("active");});
-    window.addEventListener("click",e=>{if(!sidebar.contains(e.target)&&!hamburger.contains(e.target))sidebar.classList.remove("active");});
-    document.getElementById("addBtn").addEventListener("click",()=>openModal());
-  </script>
 </body>
 </html>

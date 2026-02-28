@@ -6,9 +6,7 @@ self.addEventListener("install", e => {
         "./index.html",
         "./manifest.json",
         "./icon-192.png",
-        "./quagga.min.js",
-        "./logo.png",
-        "./service-worker.js"
+        "./quagga.min.js"
       ]);
     })
   );
