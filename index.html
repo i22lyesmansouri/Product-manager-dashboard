@@ -116,109 +116,154 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 
 <div style="margin-top:.7rem;">
 <button id="saveBtn" class="save-btn">Save</button>
-<button id="deleteBtn" style="background:#dc3545;color:white;margin-left:10px;">Delete</button>
 </div>
 
 </div>
 </div>
 
 <script>
+let db;
+const request=indexedDB.open("ProductManagerDB",3);
 
-<script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore-compat.js"></script>
+request.onupgradeneeded=e=>{
+db=e.target.result;
+if(!db.objectStoreNames.contains("products")){
+db.createObjectStore("products",{keyPath:"id",autoIncrement:true});
+}
+};
 
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyARuVXWInC8tgTOZofjueorMZfw3XVGLNE",
-  authDomain: "electrojazera-91842.firebaseapp.com",
-  projectId: "electrojazera-91842",
-  storageBucket: "electrojazera-91842.firebasestorage.app",
-  messagingSenderId: "782045343179",
-  appId: "1:782045343179:web:7d692fa678a82b46a7da4e"
-});
-
-const db = firebase.firestore();
-const productsRef = db.collection("products");
+request.onsuccess=e=>{db=e.target.result;renderProducts();};
 
 function formatSmartPrice(v){
-  const n=parseFloat(v||0);
-  if(Number.isInteger(n)) return n;
-  return n.toFixed(2).replace(/\.00$/,'');
+const n=parseFloat(v||0);
+if(Number.isInteger(n)) return n;
+return n.toFixed(2).replace(/\.00$/,'');
 }
 
 function renderProducts(filter=""){
-  productsRef.get().then(snapshot=>{
-    const list=document.getElementById("productList");
-    list.innerHTML="";
-    snapshot.forEach(doc=>{
-      const p = doc.data();
-      p.id = doc.id;
-      if((p.name||"").toLowerCase().includes(filter) ||
-         (p.description||"").toLowerCase().includes(filter)){
-        const card=document.createElement("div");
-        card.className="product";
-        card.innerHTML=`
-        <img src="${p.image||''}">
-        <div class="product-info">
-          <span class="name">${p.name}</span>
-          <span class="price">${formatSmartPrice(p.sellPrice)}</span>
-        </div>`;
-        card.onclick=()=>openEdit(p);
-        list.appendChild(card);
-      }
-    });
-  });
+const tx=db.transaction("products","readonly");
+const store=tx.objectStore("products");
+const req=store.getAll();
+
+req.onsuccess=()=>{
+const list=document.getElementById("productList");
+list.innerHTML="";
+(req.result||[])
+.filter(p=>(p.name||"").toLowerCase().includes(filter) || (p.description||"").toLowerCase().includes(filter))
+.forEach(p=>{
+
+const card=document.createElement("div");
+card.className="product";
+
+card.innerHTML=`
+<img src="${p.image||''}">
+<div class="product-info">
+<span class="name">${p.name}</span>
+<span class="price">${formatSmartPrice(p.sellPrice)}</span>
+</div>`;
+
+card.onclick=()=>openEdit(p);
+
+let timer;
+card.onmousedown=()=>{
+timer=setTimeout(()=>{
+if(confirm("Delete this product?")) deleteProduct(p.id);
+},2000);
+};
+card.onmouseup=()=>clearTimeout(timer);
+card.onmouseleave=()=>clearTimeout(timer);
+
+list.appendChild(card);
+});
+};
 }
 
 function deleteProduct(id){
-  productsRef.doc(id).delete().then(()=>{
-    renderProducts(document.getElementById("searchInput").value.toLowerCase());
-  });
+const tx=db.transaction("products","readwrite");
+tx.objectStore("products").delete(id);
+tx.oncomplete=()=>renderProducts(document.getElementById("searchInput").value.toLowerCase());
 }
 
-document.getElementById("saveBtn").onclick=function(){
-  const id=document.getElementById("editId").value;
-  const product={
-    name:document.getElementById("name").value,
-    description:document.getElementById("description").value,
-    buyPrice:parseFloat(document.getElementById("buyPrice").value)||0,
-    sellPrice:parseFloat(document.getElementById("sellPrice").value)||0,
-    bulkPrice:parseFloat(document.getElementById("bulkPrice").value)||0,
-    stock:parseInt(document.getElementById("stock").value)||0
-  };
-  const file=document.getElementById("image").files[0];
-  if(file){
-    const reader=new FileReader();
-    reader.onload=function(){
-      product.image=reader.result;
-      saveProduct(id,product);
-    };
-    reader.readAsDataURL(file);
-  }else{
-    saveProduct(id,product);
-  }
+function openEdit(p){
+document.getElementById("modalTitle").innerText="Product Details";
+document.getElementById("editId").value=p.id||"";
+document.getElementById("name").value=p.name||"";
+document.getElementById("description").value=p.description||"";
+document.getElementById("buyPrice").value=p.buyPrice||"";
+document.getElementById("sellPrice").value=p.sellPrice||"";
+document.getElementById("bulkPrice").value=p.bulkPrice||"";
+document.getElementById("stock").value=p.stock||"";
+
+if(p.image){
+document.getElementById("previewImg").src=p.image;
+document.getElementById("previewImg").style.display="block";
+}else{
+document.getElementById("previewImg").style.display="none";
+}
+
+document.getElementById("modal").style.display="flex";
+}
+
+function closeModal(){
+document.getElementById("modal").style.display="none";
+}
+
+document.getElementById("addBtn").onclick=()=>{
+document.getElementById("modalTitle").innerText="Add Product";
+document.getElementById("editId").value="";
+document.querySelectorAll("#modal input").forEach(i=>{if(i.type!=="hidden")i.value=""});
+document.getElementById("previewImg").style.display="none";
+document.getElementById("modal").style.display="flex";
 };
 
-function saveProduct(id,product){
-  if(id){
-    productsRef.doc(id).set(product).then(()=>{
-      closeModal();
-      renderProducts(document.getElementById("searchInput").value.toLowerCase());
-    });
-  }else{
-    productsRef.add(product).then(()=>{
-      closeModal();
-      renderProducts(document.getElementById("searchInput").value.toLowerCase());
-    });
-  }
+document.getElementById("saveBtn").onclick=()=>{
+const id=document.getElementById("editId").value;
+const product={
+name:document.getElementById("name").value,
+description:document.getElementById("description").value,
+buyPrice:parseFloat(document.getElementById("buyPrice").value)||0,
+sellPrice:parseFloat(document.getElementById("sellPrice").value)||0,
+bulkPrice:parseFloat(document.getElementById("bulkPrice").value)||0,
+stock:parseInt(document.getElementById("stock").value)||0
+};
+
+const file=document.getElementById("image").files[0];
+
+if(file){
+const reader=new FileReader();
+reader.onload=()=>{
+product.image=reader.result;
+saveToDB(id,product);
+};
+reader.readAsDataURL(file);
+}else{
+saveToDB(id,product);
+}
+};
+
+function saveToDB(id,product){
+const tx=db.transaction("products","readwrite");
+const store=tx.objectStore("products");
+if(id){
+product.id=parseInt(id);
+store.put(product);
+}else{
+store.add(product);
+}
+tx.oncomplete=()=>{
+closeModal();
+renderProducts(document.getElementById("searchInput").value.toLowerCase());
+};
 }
 
 document.getElementById("searchInput").addEventListener("input",e=>{
-  renderProducts(e.target.value.toLowerCase());
+renderProducts(e.target.value.toLowerCase());
 });
 
-renderProducts();
-</script>
+window.onclick=e=>{
+if(e.target.id==="modal") closeModal();
+};
+
 document.addEventListener("contextmenu", function(e) {
 if(e.target.closest(".product")){
 e.preventDefault();
@@ -247,47 +292,59 @@ z-index:100;
 #trashZone.active{bottom:0;}
 </style>
 
-
-<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:1000;">
-  <div style="background:#fff;padding:20px;border-radius:12px;width:90%;max-width:300px;text-align:center;">
-    <p>Are you sure you want to delete this product?</p>
-    <div style="margin-top:15px;display:flex;justify-content:space-between;">
-      <button id="cancelConfirm" style="background:#6c757d;color:white;">Cancel</button>
-      <button id="confirmDelete" style="background:#dc3545;color:white;">Delete</button>
-    </div>
-  </div>
-</div>
+<div id="trashZone">🗑 Drop Here To Delete</div>
+<audio id="deleteSound">
+<source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" type="audio/ogg">
+</audio>
 
 <script>
-let deleteId = null;
+const trashZone=document.getElementById("trashZone");
+const deleteSound=document.getElementById("deleteSound");
 
-document.getElementById("deleteBtn").onclick = function(){
-  const id = document.getElementById("editId").value;
-  if(!id) return;
-  deleteId = parseInt(id);
-  document.getElementById("confirmModal").style.display="flex";
-};
+function enableDragAndDrop(){
 
-document.getElementById("cancelConfirm").onclick = function(){
-  document.getElementById("confirmModal").style.display="none";
-  deleteId = null;
-};
+document.querySelectorAll(".product").forEach(card=>{
 
-document.getElementById("confirmDelete").onclick = function(){
-  if(deleteId !== null){
-    deleteProduct(deleteId);
-    closeModal();
-  }
-  document.getElementById("confirmModal").style.display="none";
-  deleteId = null;
-};
+card.setAttribute("draggable","true");
 
-document.getElementById("confirmModal").addEventListener("click", function(e){
-  if(e.target.id==="confirmModal"){
-    this.style.display="none";
-    deleteId=null;
-  }
+card.addEventListener("dragstart",e=>{
+trashZone.classList.add("active");
+e.dataTransfer.setData("text/plain", card.dataset.id);
 });
+
+card.addEventListener("dragend",()=>{
+trashZone.classList.remove("active");
+});
+
+});
+
+trashZone.addEventListener("dragover",e=>{
+e.preventDefault();
+});
+
+trashZone.addEventListener("drop",e=>{
+e.preventDefault();
+const id=e.dataTransfer.getData("text/plain");
+if(id){
+deleteProduct(parseInt(id));
+deleteSound.play();
+}
+trashZone.classList.remove("active");
+});
+}
+
+// Modify renderProducts to attach dataset id and re-enable drag
+const originalRender = renderProducts;
+renderProducts = function(filter=""){
+originalRender(filter);
+setTimeout(()=>{
+document.querySelectorAll(".product").forEach((card,index)=>{
+card.dataset.id = document.querySelectorAll(".product")[index].onclick.toString().match(/\d+/)?.[0];
+});
+enableDragAndDrop();
+},100);
+};
 </script>
+
 </body>
 </html>
