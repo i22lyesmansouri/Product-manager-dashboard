@@ -116,6 +116,8 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 
 <div style="margin-top:.7rem;">
 <button id="saveBtn" class="save-btn">Save</button>
+<button id="deleteBtnModal" style="background:#dc3545;color:#fff;margin-left:8px;">Delete</button>
+
 </div>
 
 </div>
@@ -165,13 +167,7 @@ card.innerHTML=`
 card.onclick=()=>openEdit(p);
 
 let timer;
-card.onmousedown=()=>{
-timer=setTimeout(()=>{
-if(confirm("Delete this product?")) deleteProduct(p.id);
-},2000);
-};
-card.onmouseup=()=>clearTimeout(timer);
-card.onmouseleave=()=>clearTimeout(timer);
+
 
 list.appendChild(card);
 });
@@ -201,6 +197,8 @@ document.getElementById("previewImg").style.display="block";
 document.getElementById("previewImg").style.display="none";
 }
 
+toggleDeleteButton(p.id);
+toggleDeleteButton("");
 document.getElementById("modal").style.display="flex";
 }
 
@@ -263,88 +261,10 @@ renderProducts(e.target.value.toLowerCase());
 window.onclick=e=>{
 if(e.target.id==="modal") closeModal();
 };
-
-document.addEventListener("contextmenu", function(e) {
-if(e.target.closest(".product")){
-e.preventDefault();
-}
-});
-
 </script>
 
 
-<style>
-#trashZone{
-position:fixed;
-bottom:-100px;
-left:0;
-right:0;
-height:100px;
-background:#111;
-color:#fff;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:28px;
-transition:bottom .3s;
-z-index:100;
-}
-#trashZone.active{bottom:0;}
-</style>
 
-<div id="trashZone">🗑 Drop Here To Delete</div>
-<audio id="deleteSound">
-<source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" type="audio/ogg">
-</audio>
-
-<script>
-const trashZone=document.getElementById("trashZone");
-const deleteSound=document.getElementById("deleteSound");
-
-function enableDragAndDrop(){
-
-document.querySelectorAll(".product").forEach(card=>{
-
-card.setAttribute("draggable","true");
-
-card.addEventListener("dragstart",e=>{
-trashZone.classList.add("active");
-e.dataTransfer.setData("text/plain", card.dataset.id);
-});
-
-card.addEventListener("dragend",()=>{
-trashZone.classList.remove("active");
-});
-
-});
-
-trashZone.addEventListener("dragover",e=>{
-e.preventDefault();
-});
-
-trashZone.addEventListener("drop",e=>{
-e.preventDefault();
-const id=e.dataTransfer.getData("text/plain");
-if(id){
-deleteProduct(parseInt(id));
-deleteSound.play();
-}
-trashZone.classList.remove("active");
-});
-}
-
-// Modify renderProducts to attach dataset id and re-enable drag
-const originalRender = renderProducts;
-renderProducts = function(filter=""){
-originalRender(filter);
-setTimeout(()=>{
-document.querySelectorAll(".product").forEach((card,index)=>{
-card.dataset.id = document.querySelectorAll(".product")[index].onclick.toString().match(/\d+/)?.[0];
-});
-enableDragAndDrop();
-},100);
-};
-</script>
 
 </body>
 </html>
