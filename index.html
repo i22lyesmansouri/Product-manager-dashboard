@@ -10,24 +10,56 @@ html,body{margin:0;font-family:Arial,sans-serif;background:#fff;color:#111}
 header{background:#fff;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);position:sticky;top:0;z-index:10}
 .logo{height:40px}
 .search{padding:.4rem .6rem;border:1px solid #ccc;border-radius:6px;width:160px}
+
 main{padding:1rem}
+
 #productList{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem}
+
 .product{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08);cursor:pointer;transition:.2s}
-.product:hover{transform:translateY(-3px)}
+.product:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,0.15)}
 .product img{width:100%;height:160px;object-fit:cover;display:block}
+
 .product-info{display:flex;padding:.6rem .7rem;font-weight:600;align-items:center}
-.product-info .name{flex:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.product-info .price{flex:1;text-align:right;font-weight:700;}
-#addBtn{position:fixed;bottom:20px;right:20px;background:#ffcc00;border:none;width:55px;height:55px;border-radius:50%;font-size:26px;cursor:pointer}
+.product-info .name{
+flex:2;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+.product-info .price{
+flex:1;
+text-align:right;
+font-weight:700;
+}
+
+#addBtn{position:fixed;bottom:20px;right:20px;background:#ffcc00;border:none;width:55px;height:55px;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:50}
 .modal-content{background:#fff;padding:1rem;border-radius:12px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
 .modal-content img{width:100%;height:220px;object-fit:cover;border-radius:10px;margin-bottom:10px}
+
 .field{position:relative;margin:.5rem 0}
-.field input{width:100%;padding:.6rem .8rem;padding-right:70px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;}
-.field span{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#777;}
+.field input{
+width:100%;
+padding:.6rem .8rem;
+padding-right:70px;
+border:1px solid #ccc;
+border-radius:6px;
+box-sizing:border-box;
+}
+.field span{
+position:absolute;
+right:10px;
+top:50%;
+transform:translateY(-50%);
+font-size:13px;
+color:#777;
+pointer-events:none;
+}
+
 button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 .save-btn{background:#28a745;color:#fff}
-.delete-btn{background:#dc3545;color:#fff;margin-left:10px;}
+.update-btn{background:#007bff;color:#fff}
 </style>
 </head>
 <body>
@@ -45,143 +77,217 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 
 <div id="modal" class="modal">
 <div class="modal-content">
+
 <h3 id="modalTitle"></h3>
 <img id="previewImg" style="display:none;">
 <input type="hidden" id="editId">
 
-<div class="field"><input type="text" id="name"><span>الاسم</span></div>
-<div class="field"><input type="text" id="description"><span>الوصف</span></div>
-<div class="field"><input type="number" id="buyPrice"><span>سعر الشراء</span></div>
-<div class="field"><input type="number" id="sellPrice"><span>سعر البيع</span></div>
-<div class="field"><input type="number" id="bulkPrice"><span>سعر الجملة</span></div>
-<div class="field"><input type="number" id="stock"><span>المخزون</span></div>
+<div class="field">
+<input type="text" id="name">
+<span>الاسم</span>
+</div>
+
+<div class="field">
+<input type="text" id="description">
+<span>الوصف</span>
+</div>
+
+<div class="field">
+<input type="number" id="buyPrice">
+<span>سعر الشراء</span>
+</div>
+
+<div class="field">
+<input type="number" id="sellPrice">
+<span>سعر البيع</span>
+</div>
+
+<div class="field">
+<input type="number" id="bulkPrice">
+<span>سعر الجملة</span>
+</div>
+
+<div class="field">
+<input type="number" id="stock">
+<span>المخزون</span>
+</div>
 
 <input type="file" id="image">
 
 <div style="margin-top:.7rem;">
 <button id="saveBtn" class="save-btn">Save</button>
-<button id="deleteBtn" class="delete-btn">Delete</button>
+<button id="deleteBtn" style="background:#dc3545;color:white;margin-left:10px;">Delete</button>
 </div>
 
 </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } 
-from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+<script>
 
-const firebaseConfig = {
-apiKey: "AIzaSyARuVXWInC8tgTOZofjueorMZfw3XVGLNE",
-authDomain: "electrojazera-91842.firebaseapp.com",
-projectId: "electrojazera-91842",
-storageBucket: "electrojazera-91842.firebasestorage.app",
-messagingSenderId: "782045343179",
-appId: "1:782045343179:web:7d692fa678a82b46a7da4e"
-};
+<script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore-compat.js"></script>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const productsCollection = collection(db,"products");
-
-async function renderProducts(filter=""){
-const snapshot = await getDocs(productsCollection);
-const list=document.getElementById("productList");
-list.innerHTML="";
-snapshot.forEach(docSnap=>{
-const p = docSnap.data();
-const id = docSnap.id;
-if((p.name||"").toLowerCase().includes(filter) || (p.description||"").toLowerCase().includes(filter)){
-const card=document.createElement("div");
-card.className="product";
-card.innerHTML=`
-<img src="${p.image||''}">
-<div class="product-info">
-<span class="name">${p.name}</span>
-<span class="price">${p.sellPrice||0}</span>
-</div>`;
-card.onclick=()=>openEdit(id,p);
-list.appendChild(card);
-}
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyARuVXWInC8tgTOZofjueorMZfw3XVGLNE",
+  authDomain: "electrojazera-91842.firebaseapp.com",
+  projectId: "electrojazera-91842",
+  storageBucket: "electrojazera-91842.firebasestorage.app",
+  messagingSenderId: "782045343179",
+  appId: "1:782045343179:web:7d692fa678a82b46a7da4e"
 });
+
+const db = firebase.firestore();
+const productsRef = db.collection("products");
+
+function formatSmartPrice(v){
+  const n=parseFloat(v||0);
+  if(Number.isInteger(n)) return n;
+  return n.toFixed(2).replace(/\.00$/,'');
 }
 
-function openEdit(id,p){
-modalTitle.innerText=id?"Product Details":"Add Product";
-editId.value=id||"";
-name.value=p?.name||"";
-description.value=p?.description||"";
-buyPrice.value=p?.buyPrice||"";
-sellPrice.value=p?.sellPrice||"";
-bulkPrice.value=p?.bulkPrice||"";
-stock.value=p?.stock||"";
-
-if(p?.image){
-previewImg.src=p.image;
-previewImg.style.display="block";
-}else{
-previewImg.style.display="none";
+function renderProducts(filter=""){
+  productsRef.get().then(snapshot=>{
+    const list=document.getElementById("productList");
+    list.innerHTML="";
+    snapshot.forEach(doc=>{
+      const p = doc.data();
+      p.id = doc.id;
+      if((p.name||"").toLowerCase().includes(filter) ||
+         (p.description||"").toLowerCase().includes(filter)){
+        const card=document.createElement("div");
+        card.className="product";
+        card.innerHTML=`
+        <img src="${p.image||''}">
+        <div class="product-info">
+          <span class="name">${p.name}</span>
+          <span class="price">${formatSmartPrice(p.sellPrice)}</span>
+        </div>`;
+        card.onclick=()=>openEdit(p);
+        list.appendChild(card);
+      }
+    });
+  });
 }
 
-modal.style.display="flex";
+function deleteProduct(id){
+  productsRef.doc(id).delete().then(()=>{
+    renderProducts(document.getElementById("searchInput").value.toLowerCase());
+  });
 }
 
-addBtn.onclick=()=>openEdit("",{});
-
-saveBtn.onclick=async ()=>{
-const id=editId.value;
-const product={
-name:name.value,
-description:description.value,
-buyPrice:parseFloat(buyPrice.value)||0,
-sellPrice:parseFloat(sellPrice.value)||0,
-bulkPrice:parseFloat(bulkPrice.value)||0,
-stock:parseInt(stock.value)||0
+document.getElementById("saveBtn").onclick=function(){
+  const id=document.getElementById("editId").value;
+  const product={
+    name:document.getElementById("name").value,
+    description:document.getElementById("description").value,
+    buyPrice:parseFloat(document.getElementById("buyPrice").value)||0,
+    sellPrice:parseFloat(document.getElementById("sellPrice").value)||0,
+    bulkPrice:parseFloat(document.getElementById("bulkPrice").value)||0,
+    stock:parseInt(document.getElementById("stock").value)||0
+  };
+  const file=document.getElementById("image").files[0];
+  if(file){
+    const reader=new FileReader();
+    reader.onload=function(){
+      product.image=reader.result;
+      saveProduct(id,product);
+    };
+    reader.readAsDataURL(file);
+  }else{
+    saveProduct(id,product);
+  }
 };
 
-const file=image.files[0];
-
-if(file){
-const reader=new FileReader();
-reader.onload=async ()=>{
-product.image=reader.result;
-if(id) await updateDoc(doc(db,"products",id),product);
-else await addDoc(productsCollection,product);
-closeModal();
-renderProducts(searchInput.value.toLowerCase());
-};
-reader.readAsDataURL(file);
-}else{
-if(id) await updateDoc(doc(db,"products",id),product);
-else await addDoc(productsCollection,product);
-closeModal();
-renderProducts(searchInput.value.toLowerCase());
-}
-};
-
-deleteBtn.onclick=async ()=>{
-const id=editId.value;
-if(id){
-await deleteDoc(doc(db,"products",id));
-closeModal();
-renderProducts(searchInput.value.toLowerCase());
-}
-};
-
-function closeModal(){
-modal.style.display="none";
+function saveProduct(id,product){
+  if(id){
+    productsRef.doc(id).set(product).then(()=>{
+      closeModal();
+      renderProducts(document.getElementById("searchInput").value.toLowerCase());
+    });
+  }else{
+    productsRef.add(product).then(()=>{
+      closeModal();
+      renderProducts(document.getElementById("searchInput").value.toLowerCase());
+    });
+  }
 }
 
-window.onclick=e=>{
-if(e.target.id==="modal") closeModal();
-};
-
-searchInput.addEventListener("input",e=>{
-renderProducts(e.target.value.toLowerCase());
+document.getElementById("searchInput").addEventListener("input",e=>{
+  renderProducts(e.target.value.toLowerCase());
 });
 
 renderProducts();
 </script>
+document.addEventListener("contextmenu", function(e) {
+if(e.target.closest(".product")){
+e.preventDefault();
+}
+});
 
+</script>
+
+
+<style>
+#trashZone{
+position:fixed;
+bottom:-100px;
+left:0;
+right:0;
+height:100px;
+background:#111;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:28px;
+transition:bottom .3s;
+z-index:100;
+}
+#trashZone.active{bottom:0;}
+</style>
+
+
+<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:1000;">
+  <div style="background:#fff;padding:20px;border-radius:12px;width:90%;max-width:300px;text-align:center;">
+    <p>Are you sure you want to delete this product?</p>
+    <div style="margin-top:15px;display:flex;justify-content:space-between;">
+      <button id="cancelConfirm" style="background:#6c757d;color:white;">Cancel</button>
+      <button id="confirmDelete" style="background:#dc3545;color:white;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let deleteId = null;
+
+document.getElementById("deleteBtn").onclick = function(){
+  const id = document.getElementById("editId").value;
+  if(!id) return;
+  deleteId = parseInt(id);
+  document.getElementById("confirmModal").style.display="flex";
+};
+
+document.getElementById("cancelConfirm").onclick = function(){
+  document.getElementById("confirmModal").style.display="none";
+  deleteId = null;
+};
+
+document.getElementById("confirmDelete").onclick = function(){
+  if(deleteId !== null){
+    deleteProduct(deleteId);
+    closeModal();
+  }
+  document.getElementById("confirmModal").style.display="none";
+  deleteId = null;
+};
+
+document.getElementById("confirmModal").addEventListener("click", function(e){
+  if(e.target.id==="confirmModal"){
+    this.style.display="none";
+    deleteId=null;
+  }
+});
+</script>
 </body>
 </html>
