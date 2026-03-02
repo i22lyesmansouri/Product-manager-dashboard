@@ -117,6 +117,7 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 <div style="margin-top:.7rem;">
 <button id="saveBtn" class="save-btn">Save</button>
 <button id="deleteBtnModal" style="background:#dc3545;color:#fff;margin-left:8px;">Delete</button>
+
 </div>
 
 </div>
@@ -165,6 +166,7 @@ card.innerHTML=`
 
 card.onclick=()=>openEdit(p);
 
+let timer;
 
 
 list.appendChild(card);
@@ -176,6 +178,13 @@ function deleteProduct(id){
 const tx=db.transaction("products","readwrite");
 tx.objectStore("products").delete(id);
 tx.oncomplete=()=>renderProducts(document.getElementById("searchInput").value.toLowerCase());
+}
+
+
+const deleteBtnModal = document.getElementById("deleteBtnModal");
+
+function toggleDeleteButton(id){
+    deleteBtnModal.style.display = id ? "inline-block" : "none";
 }
 
 function openEdit(p){
@@ -196,7 +205,6 @@ document.getElementById("previewImg").style.display="none";
 }
 
 toggleDeleteButton(p.id);
-toggleDeleteButton("");
 document.getElementById("modal").style.display="flex";
 }
 
@@ -259,10 +267,44 @@ renderProducts(e.target.value.toLowerCase());
 window.onclick=e=>{
 if(e.target.id==="modal") closeModal();
 };
+
+let productToDelete = null;
+
+deleteBtnModal.onclick = function(){
+    const id = document.getElementById("editId").value;
+    if(!id) return;
+    productToDelete = parseInt(id);
+    document.getElementById("confirmDelete").style.display = "flex";
+};
+
+document.getElementById("cancelDelete").onclick = function(){
+    document.getElementById("confirmDelete").style.display = "none";
+};
+
+document.getElementById("confirmDeleteBtn").onclick = function(){
+    if(productToDelete){
+        deleteProduct(productToDelete);
+        closeModal();
+    }
+    document.getElementById("confirmDelete").style.display = "none";
+};
+
 </script>
 
 
 
+
+
+<div id="confirmDelete" class="modal">
+  <div class="modal-content" style="text-align:center">
+    <h3>Delete Product</h3>
+    <p>Do you really want to delete this product?</p>
+    <div style="margin-top:15px">
+      <button id="cancelDelete" style="background:#6c757d;color:#fff">Cancel</button>
+      <button id="confirmDeleteBtn" style="background:#dc3545;color:#fff;margin-left:10px">Delete</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
