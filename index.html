@@ -5,8 +5,164 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Electro Jazera</title>
 
-<script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore-compat.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } 
+from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyARuVXWInC8tgTOZofjueorMZfw3XVGLNE",
+  authDomain: "electrojazera-91842.firebaseapp.com",
+  projectId: "electrojazera-91842",
+  storageBucket: "electrojazera-91842.firebasestorage.app",
+  messagingSenderId: "782045343179",
+  appId: "1:782045343179:web:7d692fa678a82b46a7da4e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const productsRef = collection(db, "products");
+
+function formatSmartPrice(v){
+  const n=parseFloat(v||0);
+  if(Number.isInteger(n)) return n;
+  return n.toFixed(2).replace(/\.00$/,'');
+}
+
+async function renderProducts(filter=""){
+  const snapshot = await getDocs(productsRef);
+  const list=document.getElementById("productList");
+  list.innerHTML="";
+  snapshot.forEach(d=>{
+    const p=d.data();
+    p.id=d.id;
+
+    if((p.name||"").toLowerCase().includes(filter) || 
+       (p.description||"").toLowerCase().includes(filter)){
+
+      const card=document.createElement("div");
+      card.className="product";
+
+      card.innerHTML=`
+      <img src="${p.image||''}">
+      <div class="product-info">
+      <span class="name">${p.name}</span>
+      <span class="price">${formatSmartPrice(p.sellPrice)}</span>
+      </div>`;
+
+      card.onclick=()=>openEdit(p);
+      list.appendChild(card);
+    }
+  });
+}
+
+function openEdit(p){
+  document.getElementById("modalTitle").innerText="Product Details";
+  editId.value=p.id||"";
+  name.value=p.name||"";
+  description.value=p.description||"";
+  buyPrice.value=p.buyPrice||"";
+  sellPrice.value=p.sellPrice||"";
+  bulkPrice.value=p.bulkPrice||"";
+  stock.value=p.stock||"";
+
+  if(p.image){
+    previewImg.src=p.image;
+    previewImg.style.display="block";
+  }else{
+    previewImg.style.display="none";
+  }
+
+  modal.style.display="flex";
+}
+
+function closeModal(){
+  modal.style.display="none";
+}
+
+addBtn.onclick=()=>{
+  modalTitle.innerText="Add Product";
+  editId.value="";
+  document.querySelectorAll("#modal input").forEach(i=>{
+    if(i.type!=="hidden") i.value="";
+  });
+  previewImg.style.display="none";
+  modal.style.display="flex";
+};
+
+saveBtn.onclick=async ()=>{
+  const id=editId.value;
+  const product={
+    name:name.value,
+    description:description.value,
+    buyPrice:parseFloat(buyPrice.value)||0,
+    sellPrice:parseFloat(sellPrice.value)||0,
+    bulkPrice:parseFloat(bulkPrice.value)||0,
+    stock:parseInt(stock.value)||0
+  };
+
+  const file=image.files[0];
+
+  if(file){
+    const reader=new FileReader();
+    reader.onload=async ()=>{
+      product.image=reader.result;
+      await saveProduct(id,product);
+    };
+    reader.readAsDataURL(file);
+  }else{
+    await saveProduct(id,product);
+  }
+};
+
+async function saveProduct(id,product){
+  if(id){
+    await updateDoc(doc(db,"products",id),product);
+  }else{
+    await addDoc(productsRef,product);
+  }
+  closeModal();
+  renderProducts(searchInput.value.toLowerCase());
+}
+
+deleteBtn.onclick=()=>{
+  const id=editId.value;
+  if(!id) return;
+  confirmModal.style.display="flex";
+  deleteId=id;
+};
+
+let deleteId=null;
+
+confirmDelete.onclick=async ()=>{
+  if(deleteId){
+    await deleteDoc(doc(db,"products",deleteId));
+    closeModal();
+    renderProducts(searchInput.value.toLowerCase());
+  }
+  confirmModal.style.display="none";
+  deleteId=null;
+};
+
+cancelConfirm.onclick=()=>{
+  confirmModal.style.display="none";
+  deleteId=null;
+};
+
+searchInput.addEventListener("input",e=>{
+  renderProducts(e.target.value.toLowerCase());
+});
+
+window.onclick=e=>{
+  if(e.target.id==="modal") closeModal();
+  if(e.target.id==="confirmModal"){
+    confirmModal.style.display="none";
+    deleteId=null;
+  }
+};
+
+renderProducts();
+</script>
 
 <style>
 html,body{margin:0;font-family:Arial,sans-serif;background:#fff;color:#111}
@@ -47,6 +203,7 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 <div id="modal" class="modal">
 <div class="modal-content">
 <h3 id="modalTitle"></h3>
+<img id="previewImg" style="display:none;width:100%;height:200px;object-fit:cover;margin-bottom:10px;">
 <input type="hidden" id="editId">
 
 <div class="field"><input type="text" id="name" placeholder="Name"></div>
@@ -61,123 +218,18 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 <button id="saveBtn" class="save-btn">Save</button>
 <button id="deleteBtn" class="delete-btn">Delete</button>
 </div>
-
 </div>
 </div>
 
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyARuVXWInC8tgTOZofjueorMZfw3XVGLNE",
-  authDomain: "electrojazera-91842.firebaseapp.com",
-  projectId: "electrojazera-91842",
-  storageBucket: "electrojazera-91842.firebasestorage.app",
-  messagingSenderId: "782045343179",
-  appId: "1:782045343179:web:7d692fa678a82b46a7da4e"
-});
-
-const db = firebase.firestore();
-const productsRef = db.collection("products");
-
-function formatPrice(v){
-  const n=parseFloat(v||0);
-  return Number.isInteger(n)?n:n.toFixed(2);
-}
-
-function renderProducts(filter=""){
-  productsRef.get().then(snapshot=>{
-    const list=document.getElementById("productList");
-    list.innerHTML="";
-    snapshot.forEach(doc=>{
-      const p=doc.data();
-      p.id=doc.id;
-
-      if((p.name||"").toLowerCase().includes(filter) ||
-         (p.description||"").toLowerCase().includes(filter)){
-
-        const card=document.createElement("div");
-        card.className="product";
-        card.innerHTML=`
-        <img src="${p.image||''}">
-        <div class="product-info">
-          <span class="name">${p.name}</span>
-          <span class="price">${formatPrice(p.sellPrice)}</span>
-        </div>`;
-        card.onclick=()=>openEdit(p);
-        list.appendChild(card);
-      }
-    });
-  });
-}
-
-function openEdit(p){
-  document.getElementById("modalTitle").innerText="Product";
-  document.getElementById("editId").value=p.id||"";
-  name.value=p.name||"";
-  description.value=p.description||"";
-  buyPrice.value=p.buyPrice||"";
-  sellPrice.value=p.sellPrice||"";
-  bulkPrice.value=p.bulkPrice||"";
-  stock.value=p.stock||"";
-  modal.style.display="flex";
-}
-
-function closeModal(){
-  modal.style.display="none";
-}
-
-addBtn.onclick=()=>{
-  document.getElementById("editId").value="";
-  document.querySelectorAll("#modal input").forEach(i=>i.value="");
-  modal.style.display="flex";
-};
-
-saveBtn.onclick=()=>{
-  const id=editId.value;
-  const product={
-    name:name.value,
-    description:description.value,
-    buyPrice:parseFloat(buyPrice.value)||0,
-    sellPrice:parseFloat(sellPrice.value)||0,
-    bulkPrice:parseFloat(bulkPrice.value)||0,
-    stock:parseInt(stock.value)||0
-  };
-
-  const file=image.files[0];
-  if(file){
-    const reader=new FileReader();
-    reader.onload=()=>{product.image=reader.result;saveProduct(id,product);};
-    reader.readAsDataURL(file);
-  }else{
-    saveProduct(id,product);
-  }
-};
-
-function saveProduct(id,product){
-  if(id){
-    productsRef.doc(id).set(product).then(()=>{closeModal();renderProducts();});
-  }else{
-    productsRef.add(product).then(()=>{closeModal();renderProducts();});
-  }
-}
-
-deleteBtn.onclick=()=>{
-  const id=editId.value;
-  if(!id) return;
-  if(confirm("Delete this product?")){
-    productsRef.doc(id).delete().then(()=>{closeModal();renderProducts();});
-  }
-};
-
-searchInput.addEventListener("input",e=>{
-  renderProducts(e.target.value.toLowerCase());
-});
-
-window.onclick=e=>{
-  if(e.target.id==="modal") closeModal();
-};
-
-renderProducts();
-</script>
+<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+<div style="background:#fff;padding:20px;border-radius:12px;text-align:center;width:90%;max-width:300px;">
+<p>Are you sure you want to delete this product?</p>
+<div style="margin-top:15px;display:flex;justify-content:space-between;">
+<button id="cancelConfirm">Cancel</button>
+<button id="confirmDelete" style="background:#dc3545;color:white;">Delete</button>
+</div>
+</div>
+</div>
 
 </body>
 </html>
