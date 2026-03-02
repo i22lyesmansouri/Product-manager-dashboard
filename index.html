@@ -116,8 +116,6 @@ button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
 
 <div style="margin-top:.7rem;">
 <button id="saveBtn" class="save-btn">Save</button>
-<button id="deleteBtnModal" style="background:#dc3545;color:#fff;margin-left:8px;">Delete</button>
-
 </div>
 
 </div>
@@ -167,7 +165,13 @@ card.innerHTML=`
 card.onclick=()=>openEdit(p);
 
 let timer;
-
+card.onmousedown=()=>{
+timer=setTimeout(()=>{
+if(confirm("Delete this product?")) deleteProduct(p.id);
+},2000);
+};
+card.onmouseup=()=>clearTimeout(timer);
+card.onmouseleave=()=>clearTimeout(timer);
 
 list.appendChild(card);
 });
@@ -178,13 +182,6 @@ function deleteProduct(id){
 const tx=db.transaction("products","readwrite");
 tx.objectStore("products").delete(id);
 tx.oncomplete=()=>renderProducts(document.getElementById("searchInput").value.toLowerCase());
-}
-
-
-const deleteBtnModal = document.getElementById("deleteBtnModal");
-
-function toggleDeleteButton(id){
-    deleteBtnModal.style.display = id ? "inline-block" : "none";
 }
 
 function openEdit(p){
@@ -204,7 +201,6 @@ document.getElementById("previewImg").style.display="block";
 document.getElementById("previewImg").style.display="none";
 }
 
-toggleDeleteButton(p.id);
 document.getElementById("modal").style.display="flex";
 }
 
@@ -268,43 +264,87 @@ window.onclick=e=>{
 if(e.target.id==="modal") closeModal();
 };
 
-let productToDelete = null;
-
-deleteBtnModal.onclick = function(){
-    const id = document.getElementById("editId").value;
-    if(!id) return;
-    productToDelete = parseInt(id);
-    document.getElementById("confirmDelete").style.display = "flex";
-};
-
-document.getElementById("cancelDelete").onclick = function(){
-    document.getElementById("confirmDelete").style.display = "none";
-};
-
-document.getElementById("confirmDeleteBtn").onclick = function(){
-    if(productToDelete){
-        deleteProduct(productToDelete);
-        closeModal();
-    }
-    document.getElementById("confirmDelete").style.display = "none";
-};
+document.addEventListener("contextmenu", function(e) {
+if(e.target.closest(".product")){
+e.preventDefault();
+}
+});
 
 </script>
 
 
+<style>
+#trashZone{
+position:fixed;
+bottom:-100px;
+left:0;
+right:0;
+height:100px;
+background:#111;
+color:#fff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:28px;
+transition:bottom .3s;
+z-index:100;
+}
+#trashZone.active{bottom:0;}
+</style>
 
+<div id="trashZone">🗑 Drop Here To Delete</div>
+<audio id="deleteSound">
+<source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" type="audio/ogg">
+</audio>
 
+<script>
+const trashZone=document.getElementById("trashZone");
+const deleteSound=document.getElementById("deleteSound");
 
-<div id="confirmDelete" class="modal">
-  <div class="modal-content" style="text-align:center">
-    <h3>Delete Product</h3>
-    <p>Do you really want to delete this product?</p>
-    <div style="margin-top:15px">
-      <button id="cancelDelete" style="background:#6c757d;color:#fff">Cancel</button>
-      <button id="confirmDeleteBtn" style="background:#dc3545;color:#fff;margin-left:10px">Delete</button>
-    </div>
-  </div>
-</div>
+function enableDragAndDrop(){
+
+document.querySelectorAll(".product").forEach(card=>{
+
+card.setAttribute("draggable","true");
+
+card.addEventListener("dragstart",e=>{
+trashZone.classList.add("active");
+e.dataTransfer.setData("text/plain", card.dataset.id);
+});
+
+card.addEventListener("dragend",()=>{
+trashZone.classList.remove("active");
+});
+
+});
+
+trashZone.addEventListener("dragover",e=>{
+e.preventDefault();
+});
+
+trashZone.addEventListener("drop",e=>{
+e.preventDefault();
+const id=e.dataTransfer.getData("text/plain");
+if(id){
+deleteProduct(parseInt(id));
+deleteSound.play();
+}
+trashZone.classList.remove("active");
+});
+}
+
+// Modify renderProducts to attach dataset id and re-enable drag
+const originalRender = renderProducts;
+renderProducts = function(filter=""){
+originalRender(filter);
+setTimeout(()=>{
+document.querySelectorAll(".product").forEach((card,index)=>{
+card.dataset.id = document.querySelectorAll(".product")[index].onclick.toString().match(/\d+/)?.[0];
+});
+enableDragAndDrop();
+},100);
+};
+</script>
 
 </body>
 </html>
