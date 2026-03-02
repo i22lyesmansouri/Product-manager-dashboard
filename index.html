@@ -1,1 +1,187 @@
-<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Electro Jazera</title></head><body><h2>Electro Jazera Firebase Version Ready</h2><p>Firebase connected successfully.</p></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Electro Jazera</title>
+
+<style>
+html,body{margin:0;font-family:Arial,sans-serif;background:#fff;color:#111}
+header{background:#fff;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);position:sticky;top:0;z-index:10}
+.logo{height:40px}
+.search{padding:.4rem .6rem;border:1px solid #ccc;border-radius:6px;width:160px}
+main{padding:1rem}
+#productList{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem}
+.product{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.08);cursor:pointer;transition:.2s}
+.product:hover{transform:translateY(-3px)}
+.product img{width:100%;height:160px;object-fit:cover;display:block}
+.product-info{display:flex;padding:.6rem .7rem;font-weight:600;align-items:center}
+.product-info .name{flex:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.product-info .price{flex:1;text-align:right;font-weight:700;}
+#addBtn{position:fixed;bottom:20px;right:20px;background:#ffcc00;border:none;width:55px;height:55px;border-radius:50%;font-size:26px;cursor:pointer}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:50}
+.modal-content{background:#fff;padding:1rem;border-radius:12px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+.modal-content img{width:100%;height:220px;object-fit:cover;border-radius:10px;margin-bottom:10px}
+.field{position:relative;margin:.5rem 0}
+.field input{width:100%;padding:.6rem .8rem;padding-right:70px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;}
+.field span{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#777;}
+button{padding:.5rem .8rem;border:none;border-radius:8px;cursor:pointer}
+.save-btn{background:#28a745;color:#fff}
+.delete-btn{background:#dc3545;color:#fff;margin-left:10px;}
+</style>
+</head>
+<body>
+
+<header>
+<img src="icon-192.png" class="logo">
+<input type="text" id="searchInput" class="search" placeholder="Search...">
+</header>
+
+<main>
+<div id="productList"></div>
+</main>
+
+<button id="addBtn">+</button>
+
+<div id="modal" class="modal">
+<div class="modal-content">
+<h3 id="modalTitle"></h3>
+<img id="previewImg" style="display:none;">
+<input type="hidden" id="editId">
+
+<div class="field"><input type="text" id="name"><span>الاسم</span></div>
+<div class="field"><input type="text" id="description"><span>الوصف</span></div>
+<div class="field"><input type="number" id="buyPrice"><span>سعر الشراء</span></div>
+<div class="field"><input type="number" id="sellPrice"><span>سعر البيع</span></div>
+<div class="field"><input type="number" id="bulkPrice"><span>سعر الجملة</span></div>
+<div class="field"><input type="number" id="stock"><span>المخزون</span></div>
+
+<input type="file" id="image">
+
+<div style="margin-top:.7rem;">
+<button id="saveBtn" class="save-btn">Save</button>
+<button id="deleteBtn" class="delete-btn">Delete</button>
+</div>
+
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } 
+from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyARuVXWInC8tgTOZofjueorMZfw3XVGLNE",
+authDomain: "electrojazera-91842.firebaseapp.com",
+projectId: "electrojazera-91842",
+storageBucket: "electrojazera-91842.firebasestorage.app",
+messagingSenderId: "782045343179",
+appId: "1:782045343179:web:7d692fa678a82b46a7da4e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const productsCollection = collection(db,"products");
+
+async function renderProducts(filter=""){
+const snapshot = await getDocs(productsCollection);
+const list=document.getElementById("productList");
+list.innerHTML="";
+snapshot.forEach(docSnap=>{
+const p = docSnap.data();
+const id = docSnap.id;
+if((p.name||"").toLowerCase().includes(filter) || (p.description||"").toLowerCase().includes(filter)){
+const card=document.createElement("div");
+card.className="product";
+card.innerHTML=`
+<img src="${p.image||''}">
+<div class="product-info">
+<span class="name">${p.name}</span>
+<span class="price">${p.sellPrice||0}</span>
+</div>`;
+card.onclick=()=>openEdit(id,p);
+list.appendChild(card);
+}
+});
+}
+
+function openEdit(id,p){
+modalTitle.innerText=id?"Product Details":"Add Product";
+editId.value=id||"";
+name.value=p?.name||"";
+description.value=p?.description||"";
+buyPrice.value=p?.buyPrice||"";
+sellPrice.value=p?.sellPrice||"";
+bulkPrice.value=p?.bulkPrice||"";
+stock.value=p?.stock||"";
+
+if(p?.image){
+previewImg.src=p.image;
+previewImg.style.display="block";
+}else{
+previewImg.style.display="none";
+}
+
+modal.style.display="flex";
+}
+
+addBtn.onclick=()=>openEdit("",{});
+
+saveBtn.onclick=async ()=>{
+const id=editId.value;
+const product={
+name:name.value,
+description:description.value,
+buyPrice:parseFloat(buyPrice.value)||0,
+sellPrice:parseFloat(sellPrice.value)||0,
+bulkPrice:parseFloat(bulkPrice.value)||0,
+stock:parseInt(stock.value)||0
+};
+
+const file=image.files[0];
+
+if(file){
+const reader=new FileReader();
+reader.onload=async ()=>{
+product.image=reader.result;
+if(id) await updateDoc(doc(db,"products",id),product);
+else await addDoc(productsCollection,product);
+closeModal();
+renderProducts(searchInput.value.toLowerCase());
+};
+reader.readAsDataURL(file);
+}else{
+if(id) await updateDoc(doc(db,"products",id),product);
+else await addDoc(productsCollection,product);
+closeModal();
+renderProducts(searchInput.value.toLowerCase());
+}
+};
+
+deleteBtn.onclick=async ()=>{
+const id=editId.value;
+if(id){
+await deleteDoc(doc(db,"products",id));
+closeModal();
+renderProducts(searchInput.value.toLowerCase());
+}
+};
+
+function closeModal(){
+modal.style.display="none";
+}
+
+window.onclick=e=>{
+if(e.target.id==="modal") closeModal();
+};
+
+searchInput.addEventListener("input",e=>{
+renderProducts(e.target.value.toLowerCase());
+});
+
+renderProducts();
+</script>
+
+</body>
+</html>
